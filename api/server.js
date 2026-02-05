@@ -201,6 +201,23 @@ app.post('/api/scrape', async (req, res) => {
 });
 
 /**
+ * GET /api/scrape
+ * Trigger manual scrape (GET version for easy browser access)
+ */
+app.get('/api/scrape', async (req, res) => {
+  try {
+    console.log('Manual scrape triggered via GET');
+    res.send('<h1>🔄 Scraping Birmingham Events...</h1><p>This will take 30-60 seconds. Check back in a minute!</p><p><a href="/">← Back to Events</a></p>');
+
+    // Run scrape in background
+    cachedEvents = await scraper.scrapeAll();
+    console.log('Manual scrape complete');
+  } catch (error) {
+    console.error('Manual scrape failed:', error);
+  }
+});
+
+/**
  * GET /api/metadata
  * Get metadata about the event database
  */
