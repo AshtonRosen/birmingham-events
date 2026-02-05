@@ -1,0 +1,30 @@
+{
+  "name": "birmingham-events",
+  "version": "1.0.0",
+  "main": "api/server.js",
+  "scripts": {
+    "start": "node api/server.js",
+    "scrape": "node scraper/index.js",
+    "dev": "node api/server.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "birmingham",
+    "events",
+    "scraper",
+    "cheerio",
+    "nodejs",
+    "event-aggregator"
+  ],
+  "author": "Ashton Rosen",
+  "license": "MIT",
+  "description": "Birmingham, AL event aggregator - scrapes local events from multiple sources",
+  "dependencies": {
+    "axios": "^1.13.4",
+    "cheerio": "^1.2.0",
+    "cors": "^2.8.6",
+    "date-fns": "^4.1.0",
+    "express": "^5.2.1",
+    "node-cron": "^4.2.1"
+  }
+}

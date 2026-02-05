@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Birmingham Events - Food Festivals & Local Happenings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>🎉 Birmingham Events</h1>
+      <p class="tagline">Food festivals, concerts, and local happenings in Birmingham, AL</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Controls -->
+    <div class="controls">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search events..." />
+        <button id="searchBtn">Search</button>
+        <button id="clearSearchBtn" style="display: none;">Clear</button>
+      </div>
+
+      <div class="filters">
+        <select id="categoryFilter">
+          <option value="">All Categories</option>
+        </select>
+        <button id="refreshBtn">↻ Refresh Data</button>
+      </div>
+    </div>
+
+    <!-- Metadata -->
+    <div id="metadata" class="metadata"></div>
+
+    <!-- Loading -->
+    <div id="loading" class="loading">
+      <p>Loading events...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="error" class="error" style="display: none;"></div>
+
+    <!-- Events by Date -->
+    <div id="eventsContainer"></div>
+
+    <!-- No Results -->
+    <div id="noResults" class="no-results" style="display: none;">
+      <p>No events found. Try a different search or check back later!</p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Data aggregated from multiple sources including Ticketmaster, Eventbrite, BJCC, and more.</p>
+      <p>Last updated: <span id="lastUpdated">Loading...</span></p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
