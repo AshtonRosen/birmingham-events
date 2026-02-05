@@ -1,29 +1,25 @@
-const axios = require('axios');
+const ical = require('node-ical');
 
 /**
- * Cahaba Brewing Scraper (Google Calendar API)
- * Uses their public Google Calendars directly
+ * Cahaba Brewing Scraper (iCal format)
+ * Uses their public Google Calendar iCal feeds
  */
 class CahabaBrewingScraper {
   constructor() {
     this.baseUrl = 'https://cahababrewing.com';
-    // Google Calendar API endpoint
-    this.apiBase = 'https://www.googleapis.com/calendar/v3/calendars';
-    // API key from their website
-    this.apiKey = 'AIzaSyAaWFYZZZy1oZMRqU6dj68_q4hMVgiDDT3c';
 
-    // Their three public calendars
+    // Their three public calendars (iCal URLs)
     this.calendars = [
       {
-        id: 'cahababrewing.com_3klg8osefbctleqqlh503j6k04@group.calendar.google.com',
+        url: 'https://calendar.google.com/calendar/ical/cahababrewing.com_3klg8osefbctleqqlh503j6k04%40group.calendar.google.com/public/basic.ics',
         name: 'Main Events'
       },
       {
-        id: 'cahababrewing.com_0km3pm41co70kdgsvja36vgfac@group.calendar.google.com',
+        url: 'https://calendar.google.com/calendar/ical/cahababrewing.com_0km3pm41co70kdgsvja36vgfac%40group.calendar.google.com/public/basic.ics',
         name: 'Food Trucks'
       },
       {
-        id: 'cahababrewing.com_6avc1uqlo55iabbuu4h5c4aqd8@group.calendar.google.com',
+        url: 'https://calendar.google.com/calendar/ical/cahababrewing.com_6avc1uqlo55iabbuu4h5c4aqd8%40group.calendar.google.com/public/basic.ics',
         name: 'Live Music'
       }
     ];
@@ -31,13 +27,13 @@ class CahabaBrewingScraper {
 
   async scrape() {
     try {
-      console.log('Scraping Cahaba Brewing events from Google Calendar...');
+      console.log('Scraping Cahaba Brewing events from iCal feeds...');
       const events = [];
 
-      // Get events from next 60 days
+      // Get current date for filtering
       const now = new Date();
       const future = new Date();
-      future.setDate(future.getDate() + 60);
+      future.setDate(future.getDate() + 90); // Next 90 days
 
       for (const calendar of this.calendars) {
         try {
@@ -57,49 +53,48 @@ class CahabaBrewingScraper {
   }
 
   async fetchCalendarEvents(calendar, startTime, endTime) {
-    const url = `${this.apiBase}/${encodeURIComponent(calendar.id)}/events`;
+    try {
+      const data = await ical.fromURL(calendar.url);
+      const events = [];
 
-    const params = {
-      key: this.apiKey,
-      timeMin: startTime.toISOString(),
-      timeMax: endTime.toISOString(),
-      singleEvents: true,
-      orderBy: 'startTime',
-      maxResults: 50
-    };
+      for (const k in data) {
+        const event = data[k];
 
-    const response = await axios.get(url, {
-      params,
-      timeout: 15000
-    });
+        // Only process VEVENT types
+        if (event.type !== 'VEVENT') continue;
 
-    const events = [];
+        // Get event start date
+        const eventStart = event.start;
+        if (!eventStart) continue;
 
-    if (response.data && response.data.items) {
-      for (const item of response.data.items) {
-        const event = this.parseEvent(item, calendar.name);
-        if (event && event.name) {
-          events.push(event);
+        // Filter by date range
+        if (eventStart < startTime || eventStart > endTime) continue;
+
+        const parsedEvent = this.parseEvent(event, calendar.name);
+        if (parsedEvent && parsedEvent.name) {
+          events.push(parsedEvent);
         }
       }
-    }
 
-    return events;
+      return events;
+    } catch (error) {
+      console.error(`Error parsing ${calendar.name} iCal:`, error.message);
+      return [];
+    }
   }
 
-  parseEvent(gcalEvent, calendarType) {
+  parseEvent(icalEvent, calendarType) {
     try {
-      const title = gcalEvent.summary || 'Cahaba Event';
+      const title = icalEvent.summary || 'Cahaba Event';
 
       // Parse date/time
-      const start = gcalEvent.start?.dateTime || gcalEvent.start?.date;
-      const end = gcalEvent.end?.dateTime || gcalEvent.end?.date;
+      const startDate = icalEvent.start;
+      const endDate = icalEvent.end;
 
       let dateText = '';
       let timeText = '';
 
-      if (start) {
-        const startDate = new Date(start);
+      if (startDate) {
         dateText = startDate.toLocaleDateString('en-US', {
           weekday: 'short',
           month: 'short',
@@ -107,14 +102,14 @@ class CahabaBrewingScraper {
           year: 'numeric'
         });
 
-        if (gcalEvent.start?.dateTime) {
+        // Check if it's an all-day event
+        if (icalEvent.start.getHours() !== 0 || icalEvent.start.getMinutes() !== 0) {
           const startTime = startDate.toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit'
           });
 
-          if (end) {
-            const endDate = new Date(end);
+          if (endDate) {
             const endTime = endDate.toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: '2-digit'
@@ -126,7 +121,7 @@ class CahabaBrewingScraper {
         }
       }
 
-      const description = gcalEvent.description || `${calendarType} at Cahaba Brewing`;
+      const description = icalEvent.description || `${calendarType} at Cahaba Brewing`;
 
       // Determine category based on calendar type
       let category = 'Food & Drink';
@@ -151,8 +146,8 @@ class CahabaBrewingScraper {
         category: category,
         image: '',
         imageUrl: '',
-        url: gcalEvent.htmlLink || `${this.baseUrl}/taproom/calendar/`,
-        link: gcalEvent.htmlLink || `${this.baseUrl}/taproom/calendar/`
+        url: `${this.baseUrl}/taproom/calendar/`,
+        link: `${this.baseUrl}/taproom/calendar/`
       };
     } catch (error) {
       console.error('Error parsing Cahaba event:', error.message);

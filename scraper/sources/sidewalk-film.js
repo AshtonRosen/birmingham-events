@@ -14,26 +14,47 @@ class SidewalkFilmScraper {
   async scrape() {
     try {
       console.log('Scraping Sidewalk Film Festival events...');
-
-      const response = await axios.get(this.scheduleUrl, {
-        timeout: 15000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      });
-
-      const $ = cheerio.load(response.data);
       const events = [];
 
-      // Sidewalk uses FacetWP with .fwpl-row.event structure
-      const items = $('.fwpl-row.event, .event');
+      // FacetWP typically has 5 pages with ~9 events per page
+      // Try to scrape multiple pages
+      for (let page = 1; page <= 5; page++) {
+        const pageUrl = page === 1 ? this.scheduleUrl : `${this.scheduleUrl}?fwp_paged=${page}`;
 
-      items.each((i, elem) => {
-        const event = this.parseEvent($, $(elem));
-        if (event && event.name) {
-          events.push(event);
+        try {
+          const response = await axios.get(pageUrl, {
+            timeout: 15000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+
+          const $ = cheerio.load(response.data);
+
+          // Sidewalk uses FacetWP with .fwpl-row.event structure
+          const items = $('.fwpl-row.event, .event');
+
+          if (items.length === 0 && page > 1) {
+            // No more events on this page
+            break;
+          }
+
+          items.each((i, elem) => {
+            const event = this.parseEvent($, $(elem));
+            if (event && event.name) {
+              events.push(event);
+            }
+          });
+
+          // Small delay between pages
+          if (page < 5) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (error) {
+          console.error(`Error scraping Sidewalk page ${page}:`, error.message);
+          break;
         }
-      });
+      }
 
       console.log(`Found ${events.length} Sidewalk Film Festival events`);
       return events;
