@@ -1,10 +1,17 @@
 # Birmingham Events Aggregator
 
-A lightweight event scraper and aggregator for Birmingham, AL. Scrapes events from multiple sources (Ticketmaster, Eventbrite, BJCC, InBirmingham.com, and BHMSTR) using Node.js and Cheerio, then presents them in a clean, organized web interface.
+🌐 **Live Site:** https://birmingham-events.onrender.com
+
+A comprehensive event scraper and aggregator for Birmingham, AL. Scrapes events from **17 local sources** including music venues, breweries, sports teams, and cultural institutions using Node.js and Cheerio, then presents them in a clean, organized web interface.
 
 ## Features
 
-- **Multi-Source Scraping**: Aggregates events from 5+ Birmingham event sources
+- **Multi-Source Scraping**: Aggregates events from 17 Birmingham event sources
+  - 🎵 Music venues (Alabama Theatre, Iron City, WorkPlay, Saturn)
+  - 🍺 Breweries (Monday Night, TrimTab, Cahaba, Avondale, Good People)
+  - ⚽ Sports (Birmingham Legion FC, BJCC events)
+  - 🎬 Arts & Culture (Sidewalk Film Festival)
+  - 🎟️ Major platforms (Ticketmaster, Eventbrite)
 - **Lightweight**: Uses Cheerio for HTML parsing (no headless browser needed)
 - **Smart Deduplication**: Automatically removes duplicate events from multiple sources
 - **JSON API**: RESTful API for accessing event data programmatically
@@ -17,12 +24,24 @@ A lightweight event scraper and aggregator for Birmingham, AL. Scrapes events fr
 ```
 birmingham-events/
 ├── scraper/              # Event scraping logic
-│   ├── sources/          # Individual source scrapers
-│   │   ├── ticketmaster.js
-│   │   ├── bjcc.js
-│   │   ├── inbirmingham.js
-│   │   ├── eventbrite.js
-│   │   └── bhmstr.js
+│   ├── sources/          # Individual source scrapers (17 total)
+│   │   ├── ticketmaster.js       # Ticketmaster API
+│   │   ├── bjcc.js               # BJCC venue
+│   │   ├── alabama-theatre.js    # Alabama Theatre
+│   │   ├── iron-city.js          # Iron City venue
+│   │   ├── workplay.js           # WorkPlay
+│   │   ├── saturn-birmingham.js  # Saturn
+│   │   ├── birmingham-legion.js  # Legion FC soccer
+│   │   ├── monday-night-brewing.js
+│   │   ├── trimtab-brewing.js
+│   │   ├── cahaba-brewing.js
+│   │   ├── avondale-brewing.js
+│   │   ├── good-people-brewing.js
+│   │   ├── sidewalk-film.js      # Sidewalk Film Festival
+│   │   ├── inbirmingham.js       # Tourism site
+│   │   ├── eventbrite.js         # Eventbrite platform
+│   │   ├── bhmstr.js             # Birmingham arts
+│   │   └── eventim.js            # Eventim ticketing
 │   ├── utils/            # Utility functions
 │   │   ├── normalizer.js # Standardize event formats
 │   │   └── deduplicator.js # Remove duplicates

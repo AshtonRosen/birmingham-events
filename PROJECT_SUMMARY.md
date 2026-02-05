@@ -1,13 +1,23 @@
 # Birmingham Events Aggregator - Project Summary
 
+🌐 **Live Site:** https://birmingham-events.onrender.com
+
+**Version:** 1.1.0 | **Status:** Production - Live ✅
+
 ## What Was Built
 
-A complete, production-ready event scraping and aggregation system for Birmingham, AL, built with Node.js and Cheerio (lightweight, no headless browser needed).
+A comprehensive, production-ready event scraping and aggregation system for Birmingham, AL, built with Node.js and Cheerio (lightweight, no headless browser needed). Now aggregating from **17 local sources** including music venues, breweries, sports teams, and cultural institutions.
 
 ### ✅ Completed Components
 
 1. **Web Scraper System**
-   - 5 source scrapers (Ticketmaster, BJCC, Eventbrite, InBirmingham, BHMSTR)
+   - **17 source scrapers** including:
+     - Ticketmaster API (50-100+ events)
+     - 4 music venues (Alabama Theatre, Iron City, WorkPlay, Saturn)
+     - 5 breweries (Monday Night, TrimTab, Cahaba, Avondale, Good People)
+     - Sports (Birmingham Legion FC, BJCC)
+     - Arts & Culture (Sidewalk Film Festival)
+     - Event aggregators (Eventbrite, InBirmingham, others)
    - Smart data normalization across different date/time formats
    - Intelligent deduplication using similarity scoring
    - Rate limiting and error handling
