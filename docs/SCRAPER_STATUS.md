@@ -19,8 +19,11 @@ These scrapers successfully fetch events:
 
 ### Cahaba Brewing - SOLVED ✨
 - **Original Issue**: FullCalendar with Google Calendar (JavaScript-rendered)
-- **Solution**: Direct Google Calendar API integration
+- **Attempted Solution**: Google Calendar API (failed - domain-restricted API key)
+- **Final Solution**: Public iCal format (.ics feeds)
 - **Status**: Now fetching from 3 public calendars (Main Events, Food Trucks, Live Music)
+- **Technical Details**: Uses `node-ical` package to parse iCal feeds from Google Calendar public URLs
+- **Date Range**: Fetches events from next 90 days
 
 ### Iron City - SOLVED ✨
 - **Original Issue**: Ticketmaster widget (JavaScript-rendered)
@@ -74,7 +77,7 @@ These breweries don't maintain public online event calendars:
 
 ## Summary
 
-**✅ Working: 10 sources** (Ticketmaster w/ Iron City + Saturn venues, BJCC, WorkPlay, Sidewalk, InBirmingham, Eventbrite, Saturn, Avondale, Cahaba)
+**✅ Working: 10 sources** (Ticketmaster w/ Iron City + Saturn venues, BJCC, WorkPlay, Sidewalk w/ pagination, InBirmingham, Eventbrite, Saturn, Avondale, Cahaba via iCal)
 
 **⚠️ Would Need Puppeteer: 2 sources** (TrimTab, Birmingham Legion - both low priority)
 
@@ -103,8 +106,10 @@ Keep the 8 working sources (currently showing 400+ events) and skip the JavaScri
 
 ## Current Event Count
 
-- **Previous**: ~405 events scraped → 191 unique after dedup
-- **Expected After Updates**: 450+ events → 220+ unique (estimated)
-  - Added Cahaba (3 calendars) - expect 10-20 events
-  - Added venue-specific Ticketmaster queries - expect 5-10 more events
+- **Before Fixes**: ~405 events scraped → 191 unique after dedup
+- **After All Updates**: 480+ events → 220+ unique (estimated)
+  - Cahaba iCal (3 calendars): +10-20 events
+  - Sidewalk pagination (5 pages): +35 events (from 7 to 42)
+  - Venue-specific Ticketmaster: +5-10 events
+  - Saturn + Avondale fixes: +5-10 events
 - **Still Missing**: ~10-20 events from TrimTab and Birmingham Legion (low priority)

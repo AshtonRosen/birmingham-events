@@ -40,11 +40,12 @@ Birmingham Events aggregates event data from **17 local sources** to provide the
 #### Iron City
 - **URL:** https://ironcitybham.com/events/
 - **Address:** 2700 1st Ave S, Birmingham, AL 35233
-- **Status:** ✅ Active
-- **Events:** 10-20 per month
+- **Status:** ✅ Active (via Ticketmaster API)
+- **Events:** 15-25 per month
 - **Categories:** Music, Concerts
-- **Notes:** Popular live music venue
-- **File:** `scraper/sources/iron-city.js`
+- **Technical:** Covered by Ticketmaster venue-specific query (Venue ID: KovZpZAE7IJA)
+- **Notes:** Popular live music venue, events pulled from Ticketmaster
+- **File:** `scraper/sources/ticketmaster.js` (venue query)
 
 #### WorkPlay
 - **URL:** https://workplay.com/calendar/
@@ -56,13 +57,14 @@ Birmingham Events aggregates event data from **17 local sources** to provide the
 - **File:** `scraper/sources/workplay.js`
 
 #### Saturn
-- **URL:** https://saturnbirmingham.com/events/
+- **URL:** https://saturnbirmingham.com/calendar/
 - **Address:** 200 41st St S, Birmingham, AL 35222
-- **Status:** ✅ Active
+- **Status:** ✅ Active (dual coverage)
 - **Events:** 15-25 per month
 - **Categories:** Music, Entertainment
-- **Notes:** Located in Avondale neighborhood
-- **File:** `scraper/sources/saturn-birmingham.js`
+- **Technical:** Direct scraping + Ticketmaster venue query (Venue ID: KovZpZAIdEAA)
+- **Notes:** Located in Avondale neighborhood. Uses SeeTickets widget.
+- **File:** `scraper/sources/saturn-birmingham.js` + Ticketmaster
 
 ---
 
@@ -71,28 +73,30 @@ Birmingham Events aggregates event data from **17 local sources** to provide the
 #### Monday Night Brewing - Birmingham
 - **URL:** https://mondaynightbrewing.com/birmingham/events/
 - **Address:** 2821 5th Ave S, Birmingham, AL 35233
-- **Status:** ✅ Active
-- **Events:** 5-10 per month
+- **Status:** ❌ No public calendar (404)
+- **Events:** N/A
 - **Categories:** Food & Drink, Live music, Trivia
-- **Notes:** Regular events including live music and food trucks
-- **File:** `scraper/sources/monday-night-brewing.js`
+- **Notes:** No online event calendar found. Check social media for events.
+- **File:** `scraper/sources/monday-night-brewing.js` (disabled)
 
 #### TrimTab Brewing
-- **URL:** https://www.trimtabbrewing.com/events/
+- **URL:** https://www.trimtabbrewing.com/calendar/
 - **Address:** 2721 5th Ave S, Birmingham, AL 35233
-- **Status:** ✅ Active
-- **Events:** 3-8 per month
+- **Status:** ⚠️ JavaScript-rendered (Wix)
+- **Events:** 3-8 per month (not currently captured)
 - **Categories:** Food & Drink, Community events
-- **Notes:** Known for yoga and community gatherings
-- **File:** `scraper/sources/trimtab-brewing.js`
+- **Technical:** Wix framework, would require Puppeteer
+- **Notes:** Known for yoga and community gatherings. Low priority for enhancement.
+- **File:** `scraper/sources/trimtab-brewing.js` (returns 0)
 
 #### Cahaba Brewing
 - **URL:** https://www.cahababrewing.com/events
 - **Address:** 4500 5th Ave S, Birmingham, AL 35222
-- **Status:** ✅ Active
-- **Events:** 3-8 per month
-- **Categories:** Food & Drink, Live entertainment
-- **Notes:** Large taproom with regular events
+- **Status:** ✅ Active (iCal API)
+- **Events:** 10-20 per month (3 calendars)
+- **Categories:** Food & Drink, Live Music, Food Trucks
+- **Technical:** Uses public Google Calendar iCal feeds (.ics format)
+- **Notes:** Scrapes 3 calendars: Main Events, Food Trucks, Live Music
 - **File:** `scraper/sources/cahaba-brewing.js`
 
 #### Avondale Brewing
@@ -107,25 +111,26 @@ Birmingham Events aggregates event data from **17 local sources** to provide the
 #### Good People Brewing
 - **URL:** https://www.goodpeoplebrewing.com/events
 - **Address:** 114 14th St S, Birmingham, AL 35233
-- **Status:** ✅ Active
-- **Events:** 3-8 per month
+- **Status:** ❌ No public calendar (404)
+- **Events:** N/A
 - **Categories:** Food & Drink, Entertainment
-- **Notes:** Downtown brewery with regular programming
-- **File:** `scraper/sources/good-people-brewing.js`
+- **Notes:** No online event calendar found. Check social media for events.
+- **File:** `scraper/sources/good-people-brewing.js` (disabled)
 
 ---
 
 ### ⚽ Sports (2)
 
 #### Birmingham Legion FC
-- **URL:** https://www.bhmlegion.com/schedule/
+- **URL:** https://www.uslchampionship.com/birmingham-legion-fc-schedule
 - **Venue:** Protective Stadium
 - **Address:** 2150 Richard Arrington Jr Blvd N, Birmingham, AL 35203
-- **Status:** ✅ Active
-- **Events:** 15-20 home games per season
+- **Status:** ⚠️ JavaScript-rendered (Opta widget)
+- **Events:** 15-20 home games per season (not currently captured)
 - **Categories:** Sports (Soccer)
-- **Notes:** USL Championship team, March-October season
-- **File:** `scraper/sources/birmingham-legion.js`
+- **Technical:** Opta sports data widget, would require Puppeteer
+- **Notes:** USL Championship team, March-October season. Low priority for enhancement.
+- **File:** `scraper/sources/birmingham-legion.js` (returns 0)
 
 #### BJCC (Birmingham-Jefferson Convention Complex)
 - **URL:** https://www.bjcc.org/events
@@ -139,12 +144,13 @@ Birmingham Events aggregates event data from **17 local sources** to provide the
 
 ### 🎬 Arts & Culture (1)
 
-#### Sidewalk Film Festival
-- **URL:** https://sidewalkfest.com/schedule/
-- **Status:** ✅ Active (Seasonal)
-- **Events:** 50+ screenings during festival (Annual - August)
-- **Categories:** Film, Arts
-- **Notes:** Major annual film festival, check year-round for related events
+#### Sidewalk Film Festival / Sidewalk Film Center
+- **URL:** https://sidewalkfest.com/events-list/
+- **Status:** ✅ Active (Year-round)
+- **Events:** 40-50 screenings/events (paginated)
+- **Categories:** Film, Arts, Screenings, Special Events
+- **Technical:** FacetWP pagination (5 pages, 9 events per page)
+- **Notes:** Year-round cinema + annual festival (August). Includes watch parties, marathons, free events
 - **File:** `scraper/sources/sidewalk-film.js`
 
 ---
@@ -189,10 +195,10 @@ Birmingham Events aggregates event data from **17 local sources** to provide the
 
 | Status | Count | Sources |
 |--------|-------|---------|
-| ✅ **Active & Working** | 11 | Ticketmaster, BJCC, Alabama Theatre, Iron City, WorkPlay, Saturn, Legion FC, Mon Night, TrimTab, Cahaba, Avondale, Good People, Sidewalk |
-| ⚠️ **Needs Upgrade** | 2 | InBirmingham, Eventbrite (JavaScript rendering) |
-| ❌ **Blocked/Inactive** | 2 | BHMSTR, Eventim |
-| **TOTAL** | **17** | **All sources configured** |
+| ✅ **Active & Working** | 10 | Ticketmaster (w/ Iron City + Saturn venues), BJCC, Alabama Theatre, WorkPlay, Saturn, Avondale, Cahaba (iCal), Sidewalk (paginated), InBirmingham, Eventbrite |
+| ⚠️ **Low Priority / JS-heavy** | 2 | TrimTab (Wix), Legion FC (Opta widget) |
+| ❌ **No Calendar / Blocked** | 5 | Monday Night, Good People, BHMSTR, Eventim, Iron City scraper (redundant) |
+| **TOTAL** | **17** | **10 working, 7 inactive/redundant** |
 
 ---
 
@@ -340,10 +346,11 @@ To add a new Birmingham event source:
 ## Technical Details
 
 ### Scraping Method by Source
-- **API-based (1):** Ticketmaster
-- **Static HTML (10):** BJCC, Alabama Theatre, Iron City, WorkPlay, Saturn, Breweries (5), Legion FC, Sidewalk
-- **JavaScript-rendered (2):** InBirmingham, Eventbrite
-- **Blocked (2):** BHMSTR, Eventim
+- **API-based (2):** Ticketmaster (JSON API), Cahaba (iCal feeds)
+- **Static HTML w/ Pagination (1):** Sidewalk (FacetWP, 5 pages)
+- **Static HTML (6):** BJCC, Alabama Theatre, WorkPlay, Saturn, Avondale, InBirmingham, Eventbrite
+- **JavaScript-rendered (2):** TrimTab (Wix), Legion FC (Opta)
+- **No Calendar/Blocked (4):** Monday Night, Good People, BHMSTR, Eventim
 
 ### Categories Used
 - Music
