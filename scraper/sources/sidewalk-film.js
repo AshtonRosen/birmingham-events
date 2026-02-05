@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
 class SidewalkFilmScraper {
   constructor() {
     this.baseUrl = 'https://sidewalkfest.com';
-    this.scheduleUrl = 'https://sidewalkfest.com/schedule/';
+    this.scheduleUrl = 'https://sidewalkfest.com/events-list/';
   }
 
   async scrape() {
@@ -25,28 +25,15 @@ class SidewalkFilmScraper {
       const $ = cheerio.load(response.data);
       const events = [];
 
-      const selectors = [
-        '.event-item',
-        '.screening',
-        '.film',
-        'article[class*="event"]',
-        '.schedule-item'
-      ];
+      // Sidewalk uses FacetWP with .fwpl-row.event structure
+      const items = $('.fwpl-row.event, .event');
 
-      let foundEvents = false;
-      for (const selector of selectors) {
-        const items = $(selector);
-        if (items.length > 0) {
-          items.each((i, elem) => {
-            const event = this.parseEvent($, $(elem));
-            if (event && event.name) {
-              events.push(event);
-              foundEvents = true;
-            }
-          });
-          if (foundEvents) break;
+      items.each((i, elem) => {
+        const event = this.parseEvent($, $(elem));
+        if (event && event.name) {
+          events.push(event);
         }
-      }
+      });
 
       console.log(`Found ${events.length} Sidewalk Film Festival events`);
       return events;
@@ -58,15 +45,17 @@ class SidewalkFilmScraper {
 
   parseEvent($, element) {
     try {
-      const title = element.find('.event-title, .title, h2, h3, .film-title').first().text().trim() ||
-                    element.find('a').first().text().trim();
+      // Sidewalk uses FacetWP structure
+      const title = element.find('h3, h2, .film-title').first().text().trim() ||
+                    element.find('strong').first().text().trim();
 
-      const dateText = element.find('.event-date, .date, time, .screening-date').first().text().trim();
-      const timeText = element.find('.event-time, .time, .screening-time').first().text().trim();
+      // Get date from .tickets-for-date or date sections
+      const dateText = element.find('.tickets-for-date, .date-section, time').first().text().trim();
+      const timeText = element.find('.date-buttons, .showtime').first().text().trim();
 
-      const venue = element.find('.venue, .location, .theater').first().text().trim() || 'Various Venues';
+      const venue = element.find('.venue-wrapper, .venue').first().text().trim() || 'Sidewalk Film Center';
 
-      const description = element.find('.event-description, .description, p, .synopsis').first().text().trim();
+      const description = element.find('.description, .synopsis, p').first().text().trim();
 
       const image = element.find('img').first().attr('src') || '';
       const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;
