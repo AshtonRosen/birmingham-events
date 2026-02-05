@@ -1,40 +1,52 @@
 const axios = require('axios');
-const cheerio = require('cheerio');
 
 /**
- * Cahaba Brewing Scraper
- * https://www.cahababrewing.com/events
+ * Cahaba Brewing Scraper (Google Calendar API)
+ * Uses their public Google Calendars directly
  */
 class CahabaBrewingScraper {
   constructor() {
     this.baseUrl = 'https://cahababrewing.com';
-    this.eventsUrl = 'https://cahababrewing.com/taproom/calendar/';
+    // Google Calendar API endpoint
+    this.apiBase = 'https://www.googleapis.com/calendar/v3/calendars';
+    // API key from their website
+    this.apiKey = 'AIzaSyAaWFYZZZy1oZMRqU6dj68_q4hMVgiDDT3c';
+
+    // Their three public calendars
+    this.calendars = [
+      {
+        id: 'cahababrewing.com_3klg8osefbctleqqlh503j6k04@group.calendar.google.com',
+        name: 'Main Events'
+      },
+      {
+        id: 'cahababrewing.com_0km3pm41co70kdgsvja36vgfac@group.calendar.google.com',
+        name: 'Food Trucks'
+      },
+      {
+        id: 'cahababrewing.com_6avc1uqlo55iabbuu4h5c4aqd8@group.calendar.google.com',
+        name: 'Live Music'
+      }
+    ];
   }
 
   async scrape() {
     try {
-      console.log('Scraping Cahaba Brewing events...');
-
-      const response = await axios.get(this.eventsUrl, {
-        timeout: 15000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      });
-
-      const $ = cheerio.load(response.data);
+      console.log('Scraping Cahaba Brewing events from Google Calendar...');
       const events = [];
 
-      // Cahaba uses FullCalendar with Google Calendar
-      // Note: This might be JavaScript-rendered and not scrapable with Cheerio
-      const items = $('.fc-daygrid-event, .fc-event, a.fc-event');
+      // Get events from next 60 days
+      const now = new Date();
+      const future = new Date();
+      future.setDate(future.getDate() + 60);
 
-      items.each((i, elem) => {
-        const event = this.parseEvent($, $(elem));
-        if (event && event.name) {
-          events.push(event);
+      for (const calendar of this.calendars) {
+        try {
+          const calendarEvents = await this.fetchCalendarEvents(calendar, now, future);
+          events.push(...calendarEvents);
+        } catch (error) {
+          console.error(`Error fetching ${calendar.name}:`, error.message);
         }
-      });
+      }
 
       console.log(`Found ${events.length} Cahaba Brewing events`);
       return events;
@@ -44,25 +56,85 @@ class CahabaBrewingScraper {
     }
   }
 
-  parseEvent($, element) {
-    try {
-      // Cahaba uses FullCalendar structure
-      const title = element.find('.fc-event-title').first().text().trim();
+  async fetchCalendarEvents(calendar, startTime, endTime) {
+    const url = `${this.apiBase}/${encodeURIComponent(calendar.id)}/events`;
 
-      const dateText = element.attr('data-date') || element.find('.fc-event-time').attr('data-start') || '';
-      const timeText = element.find('.fc-event-time').first().text().trim();
+    const params = {
+      key: this.apiKey,
+      timeMin: startTime.toISOString(),
+      timeMax: endTime.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 50
+    };
+
+    const response = await axios.get(url, {
+      params,
+      timeout: 15000
+    });
+
+    const events = [];
+
+    if (response.data && response.data.items) {
+      for (const item of response.data.items) {
+        const event = this.parseEvent(item, calendar.name);
+        if (event && event.name) {
+          events.push(event);
+        }
+      }
+    }
+
+    return events;
+  }
+
+  parseEvent(gcalEvent, calendarType) {
+    try {
+      const title = gcalEvent.summary || 'Cahaba Event';
+
+      // Parse date/time
+      const start = gcalEvent.start?.dateTime || gcalEvent.start?.date;
+      const end = gcalEvent.end?.dateTime || gcalEvent.end?.date;
+
+      let dateText = '';
+      let timeText = '';
+
+      if (start) {
+        const startDate = new Date(start);
+        dateText = startDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        });
+
+        if (gcalEvent.start?.dateTime) {
+          const startTime = startDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit'
+          });
+
+          if (end) {
+            const endDate = new Date(end);
+            const endTime = endDate.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit'
+            });
+            timeText = `${startTime} - ${endTime}`;
+          } else {
+            timeText = startTime;
+          }
+        }
+      }
+
+      const description = gcalEvent.description || `${calendarType} at Cahaba Brewing`;
+
+      // Determine category based on calendar type
+      let category = 'Food & Drink';
+      if (calendarType === 'Live Music') {
+        category = 'Music';
+      }
 
       const venue = 'Cahaba Brewing';
-
-      const description = element.find('.event-description, .description, p, .summary-excerpt').first().text().trim();
-
-      const image = element.find('img').first().attr('data-src') || element.find('img').first().attr('src') || '';
-      const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;
-
-      let link = element.find('a').first().attr('href') || '';
-      if (link && !link.startsWith('http')) {
-        link = `${this.baseUrl}${link}`;
-      }
 
       return {
         name: title,
@@ -76,14 +148,14 @@ class CahabaBrewingScraper {
         city: 'Birmingham',
         state: 'AL',
         zipCode: '35222',
-        category: 'Food & Drink',
-        image: imageUrl,
-        imageUrl: imageUrl,
-        url: link,
-        link: link
+        category: category,
+        image: '',
+        imageUrl: '',
+        url: gcalEvent.htmlLink || `${this.baseUrl}/taproom/calendar/`,
+        link: gcalEvent.htmlLink || `${this.baseUrl}/taproom/calendar/`
       };
     } catch (error) {
-      console.error('Error parsing Cahaba Brewing event:', error.message);
+      console.error('Error parsing Cahaba event:', error.message);
       return null;
     }
   }

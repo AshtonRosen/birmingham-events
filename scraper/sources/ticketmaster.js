@@ -11,6 +11,12 @@ class TicketmasterScraper {
     this.apiKey = 'f0t5Pj2zQSMYV21IgF2iITemK4T560Kc';
     this.city = 'Birmingham';
     this.stateCode = 'AL';
+
+    // Specific venue IDs to ensure we capture all events
+    this.specificVenues = [
+      { id: 'KovZpZAE7IJA', name: 'Iron City' },
+      { id: 'KovZpZAIdEAA', name: 'Saturn Birmingham' }
+    ];
   }
 
   /**
@@ -19,34 +25,95 @@ class TicketmasterScraper {
   async scrape() {
     try {
       console.log('Scraping Ticketmaster events...');
+      const allEvents = [];
 
-      const params = {
-        apikey: this.apiKey,
-        city: this.city,
-        stateCode: this.stateCode,
-        size: 200, // Max results per page
-        sort: 'date,asc',
-        classificationName: 'Arts,Music,Sports,Family,Miscellaneous' // Broad categories
-      };
+      // First, get general Birmingham events
+      const generalEvents = await this.fetchCityEvents();
+      allEvents.push(...generalEvents);
 
+      // Then, query specific venues to ensure complete coverage
+      for (const venue of this.specificVenues) {
+        const venueEvents = await this.fetchVenueEvents(venue);
+        allEvents.push(...venueEvents);
+      }
+
+      // Deduplicate by event ID
+      const uniqueEvents = this.deduplicateById(allEvents);
+
+      console.log(`Found ${uniqueEvents.length} Ticketmaster events (${allEvents.length} before dedup)`);
+      return uniqueEvents;
+    } catch (error) {
+      console.error('Error scraping Ticketmaster:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch events by city
+   */
+  async fetchCityEvents() {
+    const params = {
+      apikey: this.apiKey,
+      city: this.city,
+      stateCode: this.stateCode,
+      size: 200, // Max results per page
+      sort: 'date,asc',
+      classificationName: 'Arts,Music,Sports,Family,Miscellaneous' // Broad categories
+    };
+
+    const response = await axios.get(`${this.baseUrl}/events.json`, {
+      params,
+      timeout: 10000
+    });
+
+    if (!response.data || !response.data._embedded || !response.data._embedded.events) {
+      return [];
+    }
+
+    return response.data._embedded.events.map(event => this.parseEvent(event));
+  }
+
+  /**
+   * Fetch events by specific venue ID
+   */
+  async fetchVenueEvents(venue) {
+    const params = {
+      apikey: this.apiKey,
+      venueId: venue.id,
+      size: 100,
+      sort: 'date,asc'
+    };
+
+    try {
       const response = await axios.get(`${this.baseUrl}/events.json`, {
         params,
         timeout: 10000
       });
 
       if (!response.data || !response.data._embedded || !response.data._embedded.events) {
-        console.log('No Ticketmaster events found');
         return [];
       }
 
-      const events = response.data._embedded.events.map(event => this.parseEvent(event));
-      console.log(`Found ${events.length} Ticketmaster events`);
-
-      return events;
+      return response.data._embedded.events.map(event => this.parseEvent(event));
     } catch (error) {
-      console.error('Error scraping Ticketmaster:', error.message);
+      console.error(`Error fetching ${venue.name} events:`, error.message);
       return [];
     }
+  }
+
+  /**
+   * Deduplicate events by Ticketmaster event ID
+   */
+  deduplicateById(events) {
+    const seen = new Set();
+    return events.filter(event => {
+      const id = event.url; // Use URL as unique identifier
+      if (seen.has(id)) {
+        return false;
+      }
+      seen.add(id);
+      return true;
+    });
   }
 
   /**
