@@ -25,27 +25,15 @@ class AvondaleBrewingScraper {
       const $ = cheerio.load(response.data);
       const events = [];
 
-      const selectors = [
-        '.event-item',
-        '.event',
-        'article[class*="event"]',
-        '.tribe-events-list-event-row'
-      ];
+      // Avondale uses .event-item structure
+      const items = $('.event-item');
 
-      let foundEvents = false;
-      for (const selector of selectors) {
-        const items = $(selector);
-        if (items.length > 0) {
-          items.each((i, elem) => {
-            const event = this.parseEvent($, $(elem));
-            if (event && event.name) {
-              events.push(event);
-              foundEvents = true;
-            }
-          });
-          if (foundEvents) break;
+      items.each((i, elem) => {
+        const event = this.parseEvent($, $(elem));
+        if (event && event.name) {
+          events.push(event);
         }
-      }
+      });
 
       console.log(`Found ${events.length} Avondale Brewing events`);
       return events;
@@ -57,15 +45,20 @@ class AvondaleBrewingScraper {
 
   parseEvent($, element) {
     try {
-      const title = element.find('.event-title, .title, h2, h3').first().text().trim() ||
-                    element.find('a').first().text().trim();
+      // Avondale uses .event-item structure with h3 titles
+      const title = element.find('h3').first().text().trim();
 
-      const dateText = element.find('.event-date, .date, time').first().text().trim();
-      const timeText = element.find('.event-time, .time').first().text().trim();
+      // Date is split into .month and .day spans
+      const month = element.find('.event-date .month').text().trim();
+      const day = element.find('.event-date .day').text().trim();
+      const dateText = `${month} ${day}`;
+
+      // Time is in the ul > li list (second item)
+      const timeText = element.find('ul li').eq(1).text().trim();
 
       const venue = 'Avondale Brewing';
 
-      const description = element.find('.event-description, .description, p').first().text().trim();
+      const description = element.find('ul li').first().text().trim(); // Full date info
 
       const image = element.find('img').first().attr('src') || '';
       const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;

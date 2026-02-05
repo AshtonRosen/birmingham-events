@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
 class SaturnBirminghamScraper {
   constructor() {
     this.baseUrl = 'https://www.saturnbirmingham.com';
-    this.eventsUrl = 'https://www.saturnbirmingham.com/events';
+    this.eventsUrl = 'https://www.saturnbirmingham.com/calendar';
   }
 
   async scrape() {
@@ -25,8 +25,8 @@ class SaturnBirminghamScraper {
       const $ = cheerio.load(response.data);
       const events = [];
 
-      // Saturn uses SeeTickets widget
-      const items = $('.seetickets-list-event-container, .mdc-card');
+      // Saturn uses SeeTickets widget with .seetickets-list-event-container
+      const items = $('.seetickets-list-event-container');
 
       items.each((i, elem) => {
         const event = this.parseEvent($, $(elem));
@@ -45,25 +45,34 @@ class SaturnBirminghamScraper {
 
   parseEvent($, element) {
     try {
-      // Saturn uses SeeTickets widget structure
-      const paragraphs = element.find('p');
-      const title = paragraphs.eq(1).find('a').first().text().trim() || paragraphs.eq(1).text().trim();
+      // Saturn uses .seetickets-list-event-container with h3 links
+      const title = element.find('h3 a').first().text().trim();
 
-      const dateText = paragraphs.eq(0).text().trim();
-      const timeText = paragraphs.eq(2).text().trim();
+      // Date is in .event-date div ("Thu Feb 5" format)
+      const dateText = element.find('.event-date').first().text().trim();
+
+      // Time is in p tags - look for "Doors:" or "Show:" text
+      let timeText = '';
+      element.find('p').each((i, p) => {
+        const text = $(p).text().trim();
+        if (text.includes('Doors:') || text.includes('Show:')) {
+          timeText = text;
+          return false; // break
+        }
+      });
 
       const venue = 'Saturn';
 
-      const description = element.find('.event-description, .description, p').first().text().trim();
+      // Description is in p.subtitle
+      const description = element.find('p.subtitle').first().text().trim();
 
       const image = element.find('img').first().attr('src') || '';
       const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;
 
-      let link = element.find('.seetickets-buy-btn').first().attr('href') ||
-                 element.find('p a').first().attr('href') || '';
-      if (link && !link.startsWith('http') && link.startsWith('/')) {
-        link = `${this.baseUrl}${link}`;
-      }
+      // SeeTickets links are in h3 a or buy button
+      let link = element.find('h3 a').first().attr('href') ||
+                 element.find('.seetickets-buy-btn').first().attr('href') || '';
+      // SeeTickets URLs are typically absolute
 
       return {
         name: title,
