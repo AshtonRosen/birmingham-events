@@ -7,8 +7,8 @@ const cheerio = require('cheerio');
  */
 class CahabaBrewingScraper {
   constructor() {
-    this.baseUrl = 'https://www.cahababrewing.com';
-    this.eventsUrl = 'https://www.cahababrewing.com/events';
+    this.baseUrl = 'https://cahababrewing.com';
+    this.eventsUrl = 'https://cahababrewing.com/taproom';
   }
 
   async scrape() {

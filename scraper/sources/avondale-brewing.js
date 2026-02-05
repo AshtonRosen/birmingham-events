@@ -7,8 +7,8 @@ const cheerio = require('cheerio');
  */
 class AvondaleBrewingScraper {
   constructor() {
-    this.baseUrl = 'https://avondalebrewing.com';
-    this.eventsUrl = 'https://avondalebrewing.com/events/';
+    this.baseUrl = 'https://www.avondalebrewing.com';
+    this.eventsUrl = 'https://www.avondalebrewing.com/calendar-tickets';
   }
 
   async scrape() {

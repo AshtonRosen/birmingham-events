@@ -7,8 +7,8 @@ const cheerio = require('cheerio');
  */
 class WorkPlayScraper {
   constructor() {
-    this.baseUrl = 'https://workplay.com';
-    this.eventsUrl = 'https://workplay.com/calendar/';
+    this.baseUrl = 'https://www.workplay.com';
+    this.eventsUrl = 'https://www.workplay.com/events';
   }
 
   async scrape() {
@@ -25,28 +25,15 @@ class WorkPlayScraper {
       const $ = cheerio.load(response.data);
       const events = [];
 
-      const selectors = [
-        '.event-item',
-        '.show',
-        '.event',
-        'article[class*="event"]',
-        '.calendar-event'
-      ];
+      // WorkPlay uses .event-card structure
+      const items = $('.event-card, a.event-card');
 
-      let foundEvents = false;
-      for (const selector of selectors) {
-        const items = $(selector);
-        if (items.length > 0) {
-          items.each((i, elem) => {
-            const event = this.parseEvent($, $(elem));
-            if (event && event.name) {
-              events.push(event);
-              foundEvents = true;
-            }
-          });
-          if (foundEvents) break;
+      items.each((i, elem) => {
+        const event = this.parseEvent($, $(elem));
+        if (event && event.name) {
+          events.push(event);
         }
-      }
+      });
 
       console.log(`Found ${events.length} WorkPlay events`);
       return events;
@@ -58,21 +45,21 @@ class WorkPlayScraper {
 
   parseEvent($, element) {
     try {
-      const title = element.find('.event-title, .title, h2, h3').first().text().trim() ||
-                    element.find('a').first().text().trim();
+      // WorkPlay uses custom event-card structure
+      const title = element.find('.event-title').first().text().trim();
 
-      const dateText = element.find('.event-date, .date, time').first().text().trim();
-      const timeText = element.find('.event-time, .time').first().text().trim();
+      const dateText = element.find('.event-meta-item').first().text().trim();
+      const timeText = element.find('.event-meta-item').eq(1).text().trim();
 
       const venue = 'WorkPlay';
 
       const description = element.find('.event-description, .description, p').first().text().trim();
 
-      const image = element.find('img').first().attr('src') || '';
+      const image = element.find('.event-image-wrapper img').first().attr('src') || '';
       const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;
 
-      let link = element.find('a').first().attr('href') || '';
-      if (link && !link.startsWith('http')) {
+      let link = element.attr('href') || element.find('a').first().attr('href') || '';
+      if (link && !link.startsWith('http') && link.startsWith('/')) {
         link = `${this.baseUrl}${link}`;
       }
 

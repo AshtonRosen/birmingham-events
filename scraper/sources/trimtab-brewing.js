@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
 class TrimTabBrewingScraper {
   constructor() {
     this.baseUrl = 'https://www.trimtabbrewing.com';
-    this.eventsUrl = 'https://www.trimtabbrewing.com/events/';
+    this.eventsUrl = 'https://www.trimtabbrewing.com/calendar';
   }
 
   async scrape() {

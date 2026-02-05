@@ -7,8 +7,8 @@ const cheerio = require('cheerio');
  */
 class SaturnBirminghamScraper {
   constructor() {
-    this.baseUrl = 'https://saturnbirmingham.com';
-    this.eventsUrl = 'https://saturnbirmingham.com/events/';
+    this.baseUrl = 'https://www.saturnbirmingham.com';
+    this.eventsUrl = 'https://www.saturnbirmingham.com/events';
   }
 
   async scrape() {
@@ -25,28 +25,15 @@ class SaturnBirminghamScraper {
       const $ = cheerio.load(response.data);
       const events = [];
 
-      const selectors = [
-        '.event-item',
-        '.show',
-        '.event',
-        'article[class*="event"]',
-        '.calendar-event'
-      ];
+      // Saturn uses SeeTickets widget
+      const items = $('.seetickets-list-event-container, .mdc-card');
 
-      let foundEvents = false;
-      for (const selector of selectors) {
-        const items = $(selector);
-        if (items.length > 0) {
-          items.each((i, elem) => {
-            const event = this.parseEvent($, $(elem));
-            if (event && event.name) {
-              events.push(event);
-              foundEvents = true;
-            }
-          });
-          if (foundEvents) break;
+      items.each((i, elem) => {
+        const event = this.parseEvent($, $(elem));
+        if (event && event.name) {
+          events.push(event);
         }
-      }
+      });
 
       console.log(`Found ${events.length} Saturn Birmingham events`);
       return events;
@@ -58,11 +45,12 @@ class SaturnBirminghamScraper {
 
   parseEvent($, element) {
     try {
-      const title = element.find('.event-title, .title, h2, h3, .show-title').first().text().trim() ||
-                    element.find('a').first().text().trim();
+      // Saturn uses SeeTickets widget structure
+      const paragraphs = element.find('p');
+      const title = paragraphs.eq(1).find('a').first().text().trim() || paragraphs.eq(1).text().trim();
 
-      const dateText = element.find('.event-date, .date, time').first().text().trim();
-      const timeText = element.find('.event-time, .time, .doors').first().text().trim();
+      const dateText = paragraphs.eq(0).text().trim();
+      const timeText = paragraphs.eq(2).text().trim();
 
       const venue = 'Saturn';
 
@@ -71,8 +59,9 @@ class SaturnBirminghamScraper {
       const image = element.find('img').first().attr('src') || '';
       const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;
 
-      let link = element.find('a').first().attr('href') || '';
-      if (link && !link.startsWith('http')) {
+      let link = element.find('.seetickets-buy-btn').first().attr('href') ||
+                 element.find('p a').first().attr('href') || '';
+      if (link && !link.startsWith('http') && link.startsWith('/')) {
         link = `${this.baseUrl}${link}`;
       }
 

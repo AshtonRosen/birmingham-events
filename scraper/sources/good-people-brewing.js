@@ -7,8 +7,8 @@ const cheerio = require('cheerio');
  */
 class GoodPeopleBrewingScraper {
   constructor() {
-    this.baseUrl = 'https://www.goodpeoplebrewing.com';
-    this.eventsUrl = 'https://www.goodpeoplebrewing.com/events';
+    this.baseUrl = 'https://goodpeoplebrewing.com';
+    this.eventsUrl = 'https://goodpeoplebrewing.com/taproom';
   }
 
   async scrape() {

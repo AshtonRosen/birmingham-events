@@ -7,8 +7,8 @@ const cheerio = require('cheerio');
  */
 class BirminghamLegionScraper {
   constructor() {
-    this.baseUrl = 'https://www.bhmlegion.com';
-    this.scheduleUrl = 'https://www.bhmlegion.com/schedule/';
+    this.baseUrl = 'https://www.uslchampionship.com';
+    this.scheduleUrl = 'https://www.uslchampionship.com/birmingham-legion-fc-schedule';
   }
 
   async scrape() {

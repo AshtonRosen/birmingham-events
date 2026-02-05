@@ -7,8 +7,8 @@ const cheerio = require('cheerio');
  */
 class MondayNightBrewingScraper {
   constructor() {
-    this.baseUrl = 'https://mondaynightbrewing.com';
-    this.eventsUrl = 'https://mondaynightbrewing.com/birmingham/events/';
+    this.baseUrl = 'https://www.mondaynightbrewing.com';
+    this.eventsUrl = 'https://www.mondaynightbrewing.com/events-birmingham';
   }
 
   async scrape() {
