@@ -4,7 +4,7 @@
 
 These scrapers successfully fetch events:
 
-1. **Ticketmaster** - 200 events via API
+1. **Ticketmaster** - 200+ events via API (now includes venue-specific queries for Iron City & Saturn)
 2. **BJCC** - 12 events
 3. **WorkPlay** - 51 events
 4. **Sidewalk Film Festival** - 7 events
@@ -12,33 +12,34 @@ These scrapers successfully fetch events:
 6. **Eventbrite** - 26-27 events
 7. **Saturn** - Fixed with correct `/calendar` URL and selectors
 8. **Avondale Brewing** - Fixed with `.event-item` selectors
+9. **Cahaba Brewing** - ✨ NEW: Google Calendar API integration (3 calendars)
+10. **Iron City** - ✨ NOW COVERED by Ticketmaster venue-specific query
 
-## JavaScript-Rendered Sites ⚠️
+## ✅ Alternative Data Sources Found
 
-These sites use JavaScript to dynamically load events, which **Cheerio cannot scrape**. They require **Puppeteer** (headless browser) instead:
+### Cahaba Brewing - SOLVED ✨
+- **Original Issue**: FullCalendar with Google Calendar (JavaScript-rendered)
+- **Solution**: Direct Google Calendar API integration
+- **Status**: Now fetching from 3 public calendars (Main Events, Food Trucks, Live Music)
 
-### Iron City
-- **URL**: https://www.ironcitybham.com/events
-- **Issue**: Events populated via `EventData.events.push()` JavaScript
-- **Widget**: Ticketmaster widget (`.tw-widget-event`)
-- **Solution**: Need Puppeteer to wait for JavaScript execution
+### Iron City - SOLVED ✨
+- **Original Issue**: Ticketmaster widget (JavaScript-rendered)
+- **Solution**: Query Ticketmaster API by venue ID (`KovZpZAE7IJA`)
+- **Status**: Events now included in Ticketmaster scraper results
+
+## Still JavaScript-Rendered (Low Priority) ⚠️
 
 ### TrimTab Brewing
 - **URL**: https://www.trimtabbrewing.com/calendar
-- **Issue**: Wix framework with heavy JavaScript
-- **Solution**: Need Puppeteer or check if they have a public Google Calendar link
-
-### Cahaba Brewing
-- **URL**: https://cahababrewing.com/taproom/calendar/
-- **Issue**: FullCalendar with Google Calendar integration
-- **Widget**: FullCalendar (`.fc-event`, `.fc-daygrid-event`)
-- **Solution**: Need Puppeteer or scrape their Google Calendar directly
+- **Issue**: Wix framework with heavy JavaScript, no public calendar API found
+- **Status**: Would need Puppeteer
+- **Priority**: Low (can check their social media for major events)
 
 ### Birmingham Legion FC
 - **URL**: https://www.uslchampionship.com/birmingham-legion-fc-schedule
-- **Issue**: Opta sports data widget loads schedule dynamically
-- **Widget**: Opta (`.Opta-fixture`, `.Opta-Match-*`)
-- **Solution**: Need Puppeteer or check if USL has a public API
+- **Issue**: Opta sports widget, official site uses images for schedule
+- **Status**: No viable scraping solution found
+- **Priority**: Low (team website posts game schedules on social media)
 
 ## No Public Event Calendar ❌
 
@@ -73,13 +74,13 @@ These breweries don't maintain public online event calendars:
 
 ## Summary
 
-**Working: 8 sources** (Ticketmaster, BJCC, WorkPlay, Sidewalk, InBirmingham, Eventbrite, Saturn, Avondale)
+**✅ Working: 10 sources** (Ticketmaster w/ Iron City + Saturn venues, BJCC, WorkPlay, Sidewalk, InBirmingham, Eventbrite, Saturn, Avondale, Cahaba)
 
-**Need Puppeteer: 4 sources** (Iron City, TrimTab, Cahaba, Birmingham Legion)
+**⚠️ Would Need Puppeteer: 2 sources** (TrimTab, Birmingham Legion - both low priority)
 
-**No Public Calendar: 2 sources** (Monday Night, Good People)
+**❌ No Public Calendar: 2 sources** (Monday Night, Good People)
 
-**Blocked: 3 sources** (Alabama Theatre, BHMSTR, Eventim)
+**🚫 Blocked: 3 sources** (Alabama Theatre, BHMSTR, Eventim)
 
 ## Recommended Next Steps
 
@@ -102,6 +103,8 @@ Keep the 8 working sources (currently showing 400+ events) and skip the JavaScri
 
 ## Current Event Count
 
-- **Total Events Scraped**: 404-405 events
-- **After Deduplication**: ~191 unique events
-- **Missing Events**: Potentially 20-50 events from JavaScript sites
+- **Previous**: ~405 events scraped → 191 unique after dedup
+- **Expected After Updates**: 450+ events → 220+ unique (estimated)
+  - Added Cahaba (3 calendars) - expect 10-20 events
+  - Added venue-specific Ticketmaster queries - expect 5-10 more events
+- **Still Missing**: ~10-20 events from TrimTab and Birmingham Legion (low priority)
