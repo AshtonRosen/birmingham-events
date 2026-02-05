@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
 class CahabaBrewingScraper {
   constructor() {
     this.baseUrl = 'https://cahababrewing.com';
-    this.eventsUrl = 'https://cahababrewing.com/taproom';
+    this.eventsUrl = 'https://cahababrewing.com/taproom/calendar/';
   }
 
   async scrape() {
@@ -25,27 +25,16 @@ class CahabaBrewingScraper {
       const $ = cheerio.load(response.data);
       const events = [];
 
-      const selectors = [
-        '.event-item',
-        '.event',
-        'article[class*="event"]',
-        '.sqs-block-summary'
-      ];
+      // Cahaba uses FullCalendar with Google Calendar
+      // Note: This might be JavaScript-rendered and not scrapable with Cheerio
+      const items = $('.fc-daygrid-event, .fc-event, a.fc-event');
 
-      let foundEvents = false;
-      for (const selector of selectors) {
-        const items = $(selector);
-        if (items.length > 0) {
-          items.each((i, elem) => {
-            const event = this.parseEvent($, $(elem));
-            if (event && event.name) {
-              events.push(event);
-              foundEvents = true;
-            }
-          });
-          if (foundEvents) break;
+      items.each((i, elem) => {
+        const event = this.parseEvent($, $(elem));
+        if (event && event.name) {
+          events.push(event);
         }
-      }
+      });
 
       console.log(`Found ${events.length} Cahaba Brewing events`);
       return events;
@@ -57,11 +46,11 @@ class CahabaBrewingScraper {
 
   parseEvent($, element) {
     try {
-      const title = element.find('.event-title, .title, h2, h3, .summary-title').first().text().trim() ||
-                    element.find('a').first().text().trim();
+      // Cahaba uses FullCalendar structure
+      const title = element.find('.fc-event-title').first().text().trim();
 
-      const dateText = element.find('.event-date, .date, time, .summary-metadata-item--date').first().text().trim();
-      const timeText = element.find('.event-time, .time').first().text().trim();
+      const dateText = element.attr('data-date') || element.find('.fc-event-time').attr('data-start') || '';
+      const timeText = element.find('.fc-event-time').first().text().trim();
 
       const venue = 'Cahaba Brewing';
 
