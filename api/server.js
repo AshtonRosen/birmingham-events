@@ -391,6 +391,25 @@ app.get('/api/metadata', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/health
+ * Health check and version info
+ */
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    version: '2.0.0-blob-storage',
+    features: {
+      blobStorage: !!process.env.BLOB_READ_WRITE_TOKEN,
+      puppeteer: true,
+      caching: true
+    },
+    timestamp: new Date().toISOString(),
+    eventsLoaded: !!cachedEvents,
+    eventCount: cachedEvents?.allEvents?.length || 0
+  });
+});
+
 // ====================
 // STARTUP
 // ====================
