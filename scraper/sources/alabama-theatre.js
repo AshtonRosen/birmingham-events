@@ -1,8 +1,8 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
 /**
- * Alabama Theatre Scraper
+ * Alabama Theatre Scraper (Puppeteer version)
+ * Uses headless browser for WordPress tribe-events plugin
  * https://alabamatheatre.com/events/
  */
 class AlabamaTheatreScraper {
@@ -12,86 +12,106 @@ class AlabamaTheatreScraper {
   }
 
   async scrape() {
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
+
     try {
-      console.log('Scraping Alabama Theatre events...');
+      console.log('Scraping Alabama Theatre events with Puppeteer...');
+      const page = await browser.newPage();
 
-      const response = await axios.get(this.eventsUrl, {
-        timeout: 15000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Referer': 'https://alabamatheatre.com/'
-        }
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      );
+
+      await page.goto(this.eventsUrl, {
+        waitUntil: 'networkidle2',
+        timeout: 30000
       });
 
-      const $ = cheerio.load(response.data);
-      const events = [];
+      // Wait for tribe-events to load
+      try {
+        await page.waitForSelector('.tribe-events-calendar-list__event-row, .tribe-common-g-row, article', { timeout: 10000 });
+      } catch (e) {
+        console.log('No events found on Alabama Theatre');
+        return [];
+      }
 
-      // Alabama Theatre uses WordPress tribe-events plugin
-      const items = $('.tribe-events-calendar-list__event-row, .tribe-common-g-row, article.tribe-events-calendar-list__event');
+      const events = await page.evaluate((baseUrl) => {
+        const eventElements = document.querySelectorAll('.tribe-events-calendar-list__event-row, .tribe-common-g-row, article.tribe-events-calendar-list__event, article.event');
+        const results = [];
 
-      let foundEvents = false;
-      items.each((i, elem) => {
-        const event = this.parseEvent($, $(elem));
-        if (event && event.name) {
-          events.push(event);
-          foundEvents = true;
-        }
-      });
+        eventElements.forEach(el => {
+          try {
+            const titleEl = el.querySelector('.tribe-events-calendar-list__event-title-link, .tribe-events-calendar-list__event-title, h3.tribe-events-calendar-list__event-title, .tribe-common-h6--min-medium, h4 a, h3 a, a.tribe-event-url');
+            const title = titleEl ? titleEl.textContent.trim() : '';
+
+            if (!title) return;
+
+            const dateEl = el.querySelector('.tribe-event-date-start, .tribe-events-calendar-list__event-datetime, time, .tribe-event-schedule-details');
+            const dateText = dateEl ? dateEl.textContent.trim() : '';
+
+            const timeEl = el.querySelector('.tribe-events-start-time, .tribe-event-time');
+            const timeText = timeEl ? timeEl.textContent.trim() : '';
+
+            const venueEl = el.querySelector('.venue, .location');
+            const venue = venueEl ? venueEl.textContent.trim() : 'Alabama Theatre';
+
+            const descEl = el.querySelector('.event-description, .description, p');
+            const description = descEl ? descEl.textContent.trim().substring(0, 300) : '';
+
+            const imgEl = el.querySelector('img');
+            let imageUrl = imgEl ? imgEl.src : '';
+            if (imageUrl && !imageUrl.startsWith('http')) {
+              imageUrl = baseUrl + imageUrl;
+            }
+
+            const linkEl = el.querySelector('a');
+            let link = linkEl ? linkEl.href : '';
+            if (link && !link.startsWith('http') && link.startsWith('/')) {
+              link = baseUrl + link;
+            }
+
+            results.push({
+              name: title,
+              title: title,
+              description: description,
+              date: dateText,
+              time: timeText,
+              venue: venue,
+              location: venue,
+              address: '1817 3rd Ave N',
+              city: 'Birmingham',
+              state: 'AL',
+              zipCode: '35203',
+              category: 'Entertainment',
+              image: imageUrl,
+              imageUrl: imageUrl,
+              url: link || `${baseUrl}/events/`,
+              link: link || `${baseUrl}/events/`
+            });
+          } catch (error) {
+            console.error('Error parsing event:', error);
+          }
+        });
+
+        return results;
+      }, this.baseUrl);
 
       console.log(`Found ${events.length} Alabama Theatre events`);
       return events;
+
     } catch (error) {
       console.error('Error scraping Alabama Theatre:', error.message);
       return [];
-    }
-  }
-
-  parseEvent($, element) {
-    try {
-      // Alabama Theatre uses tribe-events structure
-      const title = element.find('.tribe-events-calendar-list__event-title-link, .tribe-events-calendar-list__event-title, h3.tribe-events-calendar-list__event-title, .tribe-common-h6--min-medium').first().text().trim() ||
-                    element.find('h4 a, h3 a').first().text().trim() ||
-                    element.find('a.tribe-event-url').first().text().trim();
-
-      const dateText = element.find('.tribe-event-date-start, .tribe-events-calendar-list__event-datetime, time').first().text().trim() ||
-                       element.find('.tribe-event-schedule-details').first().text().trim();
-      const timeText = element.find('.tribe-events-start-time, .tribe-event-time').first().text().trim();
-
-      const venue = element.find('.venue, .location').first().text().trim() || 'Alabama Theatre';
-
-      const description = element.find('.event-description, .description, p').first().text().trim();
-
-      const image = element.find('img').first().attr('src') || '';
-      const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;
-
-      let link = element.find('a').first().attr('href') || '';
-      if (link && !link.startsWith('http')) {
-        link = `${this.baseUrl}${link}`;
-      }
-
-      return {
-        name: title,
-        title: title,
-        description: description,
-        date: dateText,
-        time: timeText,
-        venue: venue,
-        location: venue,
-        address: '1817 3rd Ave N',
-        city: 'Birmingham',
-        state: 'AL',
-        zipCode: '35203',
-        category: 'Entertainment',
-        image: imageUrl,
-        imageUrl: imageUrl,
-        url: link,
-        link: link
-      };
-    } catch (error) {
-      console.error('Error parsing Alabama Theatre event:', error.message);
-      return null;
+    } finally {
+      await browser.close();
     }
   }
 }

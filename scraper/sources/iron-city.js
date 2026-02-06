@@ -1,8 +1,8 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
 /**
- * Iron City Scraper
+ * Iron City Scraper (Puppeteer version)
+ * Uses headless browser for Ticketmaster widget
  * https://ironcitybham.com/events/
  */
 class IronCityScraper {
@@ -12,79 +12,103 @@ class IronCityScraper {
   }
 
   async scrape() {
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
+
     try {
-      console.log('Scraping Iron City events...');
+      console.log('Scraping Iron City events with Puppeteer...');
+      const page = await browser.newPage();
 
-      const response = await axios.get(this.eventsUrl, {
-        timeout: 15000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      );
+
+      await page.goto(this.eventsUrl, {
+        waitUntil: 'networkidle2',
+        timeout: 30000
       });
 
-      const $ = cheerio.load(response.data);
-      const events = [];
+      // Wait for Ticketmaster widget to load
+      try {
+        await page.waitForSelector('.tw-widget-event, .event, article', { timeout: 10000 });
+      } catch (e) {
+        console.log('No events found on Iron City');
+        return [];
+      }
 
-      // Iron City uses Ticketmaster widget
-      const items = $('.tw-widget-event, li.tw-widget-event');
+      const events = await page.evaluate((baseUrl) => {
+        const eventElements = document.querySelectorAll('.tw-widget-event, li.tw-widget-event, .event, article');
+        const results = [];
 
-      items.each((i, elem) => {
-        const event = this.parseEvent($, $(elem));
-        if (event && event.name) {
-          events.push(event);
-        }
-      });
+        eventElements.forEach(el => {
+          try {
+            const titleEl = el.querySelector('.tw-event-name, .event-name, h2, h3, .title');
+            const title = titleEl ? titleEl.textContent.trim() : '';
+
+            if (!title) return;
+
+            const dateEl = el.querySelector('.tw-event-date-time, .event-date, .date, time');
+            const dateText = dateEl ? dateEl.textContent.trim() : '';
+
+            const timeEl = el.querySelector('.event-time, .time');
+            const timeText = timeEl ? timeEl.textContent.trim() : '';
+
+            const descEl = el.querySelector('.event-description, .description, p');
+            const description = descEl ? descEl.textContent.trim().substring(0, 300) : '';
+
+            const imgEl = el.querySelector('.tw-event-image img, .event-img, img');
+            let imageUrl = imgEl ? imgEl.src : '';
+            if (imageUrl && !imageUrl.startsWith('http')) {
+              imageUrl = baseUrl + imageUrl;
+            }
+
+            const linkEl = el.querySelector('.tw-more-info-btn, a.button, a');
+            let link = linkEl ? linkEl.href : '';
+            if (link && !link.startsWith('http') && link.startsWith('/')) {
+              link = baseUrl + link;
+            }
+
+            results.push({
+              name: title,
+              title: title,
+              description: description,
+              date: dateText,
+              time: timeText,
+              venue: 'Iron City',
+              location: 'Iron City',
+              address: '2700 1st Ave S',
+              city: 'Birmingham',
+              state: 'AL',
+              zipCode: '35233',
+              category: 'Music',
+              image: imageUrl,
+              imageUrl: imageUrl,
+              url: link || `${baseUrl}/events`,
+              link: link || `${baseUrl}/events`
+            });
+          } catch (error) {
+            console.error('Error parsing event:', error);
+          }
+        });
+
+        return results;
+      }, this.baseUrl);
 
       console.log(`Found ${events.length} Iron City events`);
       return events;
+
     } catch (error) {
       console.error('Error scraping Iron City:', error.message);
       return [];
-    }
-  }
-
-  parseEvent($, element) {
-    try {
-      // Iron City uses Ticketmaster widget structure
-      const title = element.find('.tw-event-name, .event-name').first().text().trim();
-
-      const dateText = element.find('.tw-event-date-time, .event-date').first().text().trim();
-      const timeText = '';
-
-      const venue = 'Iron City';
-
-      const description = element.find('.event-description, .description, p').first().text().trim();
-
-      const image = element.find('.tw-event-image img, .event-img').first().attr('src') || '';
-      const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;
-
-      let link = element.find('.tw-more-info-btn, a.button').first().attr('href') ||
-                 element.find('a').first().attr('href') || '';
-      if (link && !link.startsWith('http') && link.startsWith('/')) {
-        link = `${this.baseUrl}${link}`;
-      }
-
-      return {
-        name: title,
-        title: title,
-        description: description,
-        date: dateText,
-        time: timeText,
-        venue: venue,
-        location: venue,
-        address: '2700 1st Ave S',
-        city: 'Birmingham',
-        state: 'AL',
-        zipCode: '35233',
-        category: 'Music',
-        image: imageUrl,
-        imageUrl: imageUrl,
-        url: link,
-        link: link
-      };
-    } catch (error) {
-      console.error('Error parsing Iron City event:', error.message);
-      return null;
+    } finally {
+      await browser.close();
     }
   }
 }
