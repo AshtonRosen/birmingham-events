@@ -63,7 +63,7 @@ class TicketmasterScraper {
 
     const response = await axios.get(`${this.baseUrl}/events.json`, {
       params,
-      timeout: 30000 // Increased to 30 seconds
+      timeout: 8000 // Reduced to 8 seconds for Vercel serverless compatibility
     });
 
     if (!response.data || !response.data._embedded || !response.data._embedded.events) {
@@ -87,7 +87,7 @@ class TicketmasterScraper {
     try {
       const response = await axios.get(`${this.baseUrl}/events.json`, {
         params,
-        timeout: 30000 // Increased to 30 seconds
+        timeout: 8000 // Reduced to 8 seconds for Vercel serverless compatibility
       });
 
       if (!response.data || !response.data._embedded || !response.data._embedded.events) {

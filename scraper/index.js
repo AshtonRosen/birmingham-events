@@ -95,8 +95,8 @@ class EventScraper {
         const normalized = events.map(event => EventNormalizer.normalize(event, name));
         allEvents.push(...normalized);
 
-        // Rate limiting - wait 1 second between scrapers
-        await this.sleep(1000);
+        // Rate limiting - reduced for Vercel serverless
+        await this.sleep(200);
       } catch (error) {
         console.error(`Error with ${name} scraper:`, error.message);
         results.scraped[name] = 0;

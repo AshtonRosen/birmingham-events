@@ -414,8 +414,49 @@ app.get('/api/health', (req, res) => {
     },
     timestamp: new Date().toISOString(),
     eventsLoaded: !!cachedEvents,
-    eventCount: cachedEvents?.allEvents?.length || 0
+    eventCount: cachedEvents?.allEvents?.length || 0,
+    blobTokenPresent: !!process.env.BLOB_READ_WRITE_TOKEN
   });
+});
+
+/**
+ * GET /api/test-blob
+ * Test Blob storage connectivity
+ */
+app.get('/api/test-blob', async (req, res) => {
+  try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return res.status(500).json({
+        error: 'BLOB_READ_WRITE_TOKEN environment variable not found',
+        message: 'Please set this in Vercel dashboard under Environment Variables'
+      });
+    }
+
+    // Try to save a test file
+    const testData = {
+      test: true,
+      timestamp: new Date().toISOString(),
+      message: 'Blob storage is working!'
+    };
+
+    const blob = await put('test/connectivity-test.json', JSON.stringify(testData), {
+      access: 'public',
+      addRandomSuffix: false
+    });
+
+    res.json({
+      success: true,
+      message: 'Blob storage is working correctly',
+      blobUrl: blob.url,
+      tokenPresent: true
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      message: 'Failed to connect to Blob storage',
+      tokenPresent: !!process.env.BLOB_READ_WRITE_TOKEN
+    });
+  }
 });
 
 // ====================
