@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const { launchBrowser } = require('../browser-config');
 
 /**
  * Saturn Birmingham Scraper (Puppeteer version)
@@ -12,15 +12,7 @@ class SaturnBirminghamScraper {
   }
 
   async scrape() {
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
-    });
+    const browser = await launchBrowser();
 
     try {
       console.log('Scraping Saturn Birmingham events with Puppeteer...');

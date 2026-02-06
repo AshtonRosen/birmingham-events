@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const { launchBrowser } = require('../browser-config');
 
 /**
  * Iron City Scraper (Puppeteer version)
@@ -12,15 +12,7 @@ class IronCityScraper {
   }
 
   async scrape() {
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
-    });
+    const browser = await launchBrowser();
 
     try {
       console.log('Scraping Iron City events with Puppeteer...');

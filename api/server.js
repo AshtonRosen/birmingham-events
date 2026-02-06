@@ -48,10 +48,18 @@ async function loadEvents() {
       }
     }
 
-    // Fallback: try to load from local file (development mode)
-    cachedEvents = await scraper.getEvents();
-    lastFetchTime = Date.now();
-    console.log(`Loaded ${cachedEvents?.allEvents?.length || 0} events from local file`);
+    // Fallback: try to load from local file (development mode ONLY)
+    // Don't try on Vercel as it doesn't have persistent file system
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+    if (!isProduction) {
+      console.log('Development mode - attempting to load from local file...');
+      cachedEvents = await scraper.getEvents();
+      lastFetchTime = Date.now();
+      console.log(`Loaded ${cachedEvents?.allEvents?.length || 0} events from local file`);
+    } else {
+      console.log('Production mode - no events in Blob storage yet. Run /api/scrape to populate.');
+      cachedEvents = null;
+    }
   } catch (error) {
     console.error('Error loading events:', error.message);
     cachedEvents = null;

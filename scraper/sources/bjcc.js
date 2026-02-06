@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const { launchBrowser } = require('../browser-config');
 
 /**
  * BJCC (Birmingham-Jefferson Convention Complex) Event Scraper (Puppeteer version)
@@ -10,15 +10,7 @@ class BJCCScraper {
   }
 
   async scrape() {
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
-    });
+    const browser = await launchBrowser();
 
     try {
       console.log('Scraping BJCC events with Puppeteer...');
