@@ -28,12 +28,25 @@ async function getBrowserConfig() {
   const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
 
   if (isProduction && chromium) {
-    // Vercel serverless configuration
+    // Vercel serverless configuration with optimizations
+    const executablePath = await chromium.executablePath();
+
     return {
-      args: chromium.args,
+      args: [
+        ...chromium.args,
+        '--single-process', // Critical for Vercel to avoid spawn ETXTBSY
+        '--no-zygote', // Prevents forking issues
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--disable-setuid-sandbox',
+        '--no-sandbox'
+      ],
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: executablePath,
       headless: chromium.headless,
+      ignoreHTTPSErrors: true,
+      // Add timeout to prevent hanging
+      timeout: 30000
     };
   } else {
     // Local development configuration

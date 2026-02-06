@@ -36,34 +36,34 @@ const SidewalkFilmScraper = require('./sources/sidewalk-film');
 class EventScraper {
   constructor() {
     this.scrapers = [
-      // API-based (most reliable)
-      { name: 'ticketmaster', scraper: new TicketmasterScraper() },
+      // Breweries (fast, reliable - iCal based)
+      { name: 'cahaba-brewing', scraper: new CahabaBrewingScraper() },
+      { name: 'monday-night-brewing', scraper: new MondayNightBrewingScraper() },
+      { name: 'trimtab-brewing', scraper: new TrimTabBrewingScraper() },
+      { name: 'avondale-brewing', scraper: new AvondaleBrewingScraper() },
+      { name: 'good-people-brewing', scraper: new GoodPeopleBrewingScraper() },
 
-      // Birmingham venues
+      // Sports
+      { name: 'birmingham-legion', scraper: new BirminghamLegionScraper() },
+
+      // Other aggregators (Cheerio-based, reliable)
+      { name: 'inbirmingham', scraper: new InBirminghamScraper() },
+      { name: 'eventbrite', scraper: new EventbriteScraper() },
+      { name: 'bhmstr', scraper: new BHMSTRScraper() },
+      { name: 'eventim', scraper: new EventimScraper() },
+
+      // Arts & Culture (Puppeteer)
+      { name: 'sidewalk-film', scraper: new SidewalkFilmScraper() },
+
+      // Birmingham venues (Puppeteer)
       { name: 'bjcc', scraper: new BJCCScraper() },
       { name: 'alabama-theatre', scraper: new AlabamaTheatreScraper() },
       { name: 'iron-city', scraper: new IronCityScraper() },
       { name: 'workplay', scraper: new WorkPlayScraper() },
       { name: 'saturn', scraper: new SaturnBirminghamScraper() },
 
-      // Sports
-      { name: 'birmingham-legion', scraper: new BirminghamLegionScraper() },
-
-      // Breweries
-      { name: 'monday-night-brewing', scraper: new MondayNightBrewingScraper() },
-      { name: 'trimtab-brewing', scraper: new TrimTabBrewingScraper() },
-      { name: 'cahaba-brewing', scraper: new CahabaBrewingScraper() },
-      { name: 'avondale-brewing', scraper: new AvondaleBrewingScraper() },
-      { name: 'good-people-brewing', scraper: new GoodPeopleBrewingScraper() },
-
-      // Arts & Culture
-      { name: 'sidewalk-film', scraper: new SidewalkFilmScraper() },
-
-      // Other aggregators
-      { name: 'inbirmingham', scraper: new InBirminghamScraper() },
-      { name: 'eventbrite', scraper: new EventbriteScraper() },
-      { name: 'bhmstr', scraper: new BHMSTRScraper() },
-      { name: 'eventim', scraper: new EventimScraper() }
+      // API-based (run last - can be slow)
+      { name: 'ticketmaster', scraper: new TicketmasterScraper() }
     ];
 
     this.outputPath = path.join(__dirname, '..', 'data', 'events.json');
