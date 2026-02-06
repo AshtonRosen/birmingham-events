@@ -1,0 +1,14 @@
+services:
+  - type: cron
+    name: birmingham-events-scraper
+    runtime: node
+    plan: free
+    # Run every 6 hours: 12am, 6am, 12pm, 6pm UTC
+    schedule: "0 */6 * * *"
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BLOB_READ_WRITE_TOKEN
+        sync: false  # Must be set manually in Render dashboard

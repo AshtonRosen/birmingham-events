@@ -1,0 +1,26 @@
+{
+  "name": "birmingham-events-scraper-service",
+  "version": "1.0.0",
+  "description": "Background scraper service for Birmingham Events - runs on Render with no timeout limits",
+  "main": "scraper.js",
+  "scripts": {
+    "start": "node scraper.js",
+    "scrape": "node scraper.js"
+  },
+  "keywords": [
+    "scraper",
+    "background-job",
+    "cron"
+  ],
+  "author": "Ashton Rosen",
+  "license": "MIT",
+  "dependencies": {
+    "@sparticuz/chromium": "^143.0.4",
+    "@vercel/blob": "^0.27.3",
+    "axios": "^1.13.4",
+    "cheerio": "^1.2.0",
+    "date-fns": "^4.1.0",
+    "node-ical": "^0.25.0",
+    "puppeteer-core": "^24.37.2"
+  }
+}
