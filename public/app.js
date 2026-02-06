@@ -19,7 +19,6 @@ const searchInput = document.getElementById('searchInput');
 const searchBtn = document.getElementById('searchBtn');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
 const categoryFilter = document.getElementById('categoryFilter');
-const refreshBtn = document.getElementById('refreshBtn');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,7 +34,6 @@ function setupEventListeners() {
     if (e.key === 'Enter') handleSearch();
   });
   categoryFilter.addEventListener('change', handleCategoryFilter);
-  refreshBtn.addEventListener('click', handleRefresh);
 }
 
 // Load Events from API
@@ -162,7 +160,7 @@ function renderEvents(eventsByDate) {
 function renderEventCard(event) {
   const imageHtml = event.image
     ? `<img src="${event.image}" alt="${event.title}" class="event-image" onerror="this.style.display='none'">`
-    : `<div class="event-image placeholder">🎉</div>`;
+    : `<div class="event-image placeholder">•</div>`;
 
   const priceText = event.price?.isFree
     ? 'FREE'
@@ -177,9 +175,9 @@ function renderEventCard(event) {
         <h3 class="event-title">${event.title}</h3>
 
         <div class="event-meta">
-          ${event.time ? `<div class="event-meta-item">🕒 ${event.time}</div>` : ''}
-          ${event.location?.venue ? `<div class="event-meta-item">📍 ${event.location.venue}</div>` : ''}
-          <div class="event-meta-item">💰 ${priceText}</div>
+          ${event.time ? `<div class="event-meta-item">${event.time}</div>` : ''}
+          ${event.location?.venue ? `<div class="event-meta-item">${event.location.venue}</div>` : ''}
+          <div class="event-meta-item">${priceText}</div>
         </div>
 
         ${event.description ? `<div class="event-description">${truncateText(event.description, 200)}</div>` : ''}
@@ -233,28 +231,6 @@ function handleClearSearch() {
 function handleCategoryFilter() {
   currentFilter.category = categoryFilter.value;
   renderEvents(allEvents.events);
-}
-
-// Handle Refresh
-async function handleRefresh() {
-  refreshBtn.textContent = '↻ Refreshing...';
-  refreshBtn.disabled = true;
-
-  try {
-    // Trigger scrape
-    await fetch(`${API_BASE_URL}/api/scrape`, { method: 'POST' });
-
-    // Wait 5 seconds for scrape to complete
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    // Reload events
-    await loadEvents();
-  } catch (err) {
-    showError('Failed to refresh events');
-  } finally {
-    refreshBtn.textContent = '↻ Refresh Data';
-    refreshBtn.disabled = false;
-  }
 }
 
 // Utility Functions

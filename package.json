@@ -20,6 +20,7 @@
   "license": "MIT",
   "description": "Birmingham, AL event aggregator - scrapes local events from multiple sources",
   "dependencies": {
+    "@vercel/blob": "^0.27.3",
     "axios": "^1.13.4",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
