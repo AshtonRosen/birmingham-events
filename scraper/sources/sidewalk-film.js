@@ -1,9 +1,9 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
 /**
- * Sidewalk Film Festival Scraper
- * https://sidewalkfest.com/schedule/
+ * Sidewalk Film Festival Scraper (Puppeteer version)
+ * Uses headless browser to handle JavaScript-rendered content
+ * https://sidewalkfest.com/events-list/
  */
 class SidewalkFilmScraper {
   constructor() {
@@ -12,99 +12,117 @@ class SidewalkFilmScraper {
   }
 
   async scrape() {
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
+
     try {
-      console.log('Scraping Sidewalk Film Festival events...');
-      const events = [];
+      console.log('Scraping Sidewalk Film Festival events with Puppeteer...');
+      const page = await browser.newPage();
 
-      // FacetWP typically has 5 pages with ~9 events per page
-      // Try to scrape multiple pages
-      for (let page = 1; page <= 5; page++) {
-        const pageUrl = page === 1 ? this.scheduleUrl : `${this.scheduleUrl}?fwp_paged=${page}`;
+      // Set user agent
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      );
 
-        try {
-          const response = await axios.get(pageUrl, {
-            timeout: 15000,
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-          });
+      // Navigate to events page
+      await page.goto(this.scheduleUrl, {
+        waitUntil: 'networkidle2',
+        timeout: 30000
+      });
 
-          const $ = cheerio.load(response.data);
-
-          // Sidewalk uses FacetWP with .fwpl-row.event structure
-          const items = $('.fwpl-row.event, .event');
-
-          if (items.length === 0 && page > 1) {
-            // No more events on this page
-            break;
-          }
-
-          items.each((i, elem) => {
-            const event = this.parseEvent($, $(elem));
-            if (event && event.name) {
-              events.push(event);
-            }
-          });
-
-          // Small delay between pages
-          if (page < 5) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        } catch (error) {
-          console.error(`Error scraping Sidewalk page ${page}:`, error.message);
-          break;
-        }
+      // Wait for events to load (FacetWP structure)
+      try {
+        await page.waitForSelector('.fwpl-row.event, .event, article', { timeout: 10000 });
+      } catch (e) {
+        console.log('No events found or different structure');
+        return [];
       }
+
+      // Extract events from page
+      const events = await page.evaluate((baseUrl) => {
+        const eventElements = document.querySelectorAll('.fwpl-row.event, .event, article.event-item');
+        const results = [];
+
+        eventElements.forEach(el => {
+          try {
+            // Extract title
+            const titleEl = el.querySelector('h3, h2, .film-title, .entry-title');
+            const title = titleEl ? titleEl.textContent.trim() : '';
+
+            if (!title) return;
+
+            // Extract date
+            const dateEl = el.querySelector('.tickets-for-date, .date-section, time, .event-date');
+            const dateText = dateEl ? dateEl.textContent.trim() : '';
+
+            // Extract time
+            const timeEl = el.querySelector('.date-buttons, .showtime, .event-time');
+            const timeText = timeEl ? timeEl.textContent.trim() : '';
+
+            // Extract venue
+            const venueEl = el.querySelector('.venue-wrapper, .venue, .event-venue');
+            const venue = venueEl ? venueEl.textContent.trim() : 'Sidewalk Film Center';
+
+            // Extract description
+            const descEl = el.querySelector('.description, .synopsis, .entry-content, p');
+            const description = descEl ? descEl.textContent.trim().substring(0, 300) : '';
+
+            // Extract image
+            const imgEl = el.querySelector('img');
+            let imageUrl = imgEl ? imgEl.src : '';
+            if (imageUrl && !imageUrl.startsWith('http')) {
+              imageUrl = baseUrl + imageUrl;
+            }
+
+            // Extract link
+            const linkEl = el.querySelector('a');
+            let link = linkEl ? linkEl.href : '';
+            if (!link && el.tagName === 'A') {
+              link = el.href;
+            }
+            if (link && !link.startsWith('http') && link.startsWith('/')) {
+              link = baseUrl + link;
+            }
+
+            results.push({
+              name: title,
+              title: title,
+              description: description,
+              date: dateText,
+              time: timeText,
+              venue: venue,
+              location: venue,
+              city: 'Birmingham',
+              state: 'AL',
+              category: 'Film',
+              image: imageUrl,
+              imageUrl: imageUrl,
+              url: link || `${baseUrl}/events-list/`,
+              link: link || `${baseUrl}/events-list/`
+            });
+          } catch (error) {
+            console.error('Error parsing event:', error);
+          }
+        });
+
+        return results;
+      }, this.baseUrl);
 
       console.log(`Found ${events.length} Sidewalk Film Festival events`);
       return events;
+
     } catch (error) {
       console.error('Error scraping Sidewalk Film Festival:', error.message);
       return [];
-    }
-  }
-
-  parseEvent($, element) {
-    try {
-      // Sidewalk uses FacetWP structure
-      const title = element.find('h3, h2, .film-title').first().text().trim() ||
-                    element.find('strong').first().text().trim();
-
-      // Get date from .tickets-for-date or date sections
-      const dateText = element.find('.tickets-for-date, .date-section, time').first().text().trim();
-      const timeText = element.find('.date-buttons, .showtime').first().text().trim();
-
-      const venue = element.find('.venue-wrapper, .venue').first().text().trim() || 'Sidewalk Film Center';
-
-      const description = element.find('.description, .synopsis, p').first().text().trim();
-
-      const image = element.find('img').first().attr('src') || '';
-      const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;
-
-      let link = element.find('a').first().attr('href') || '';
-      if (link && !link.startsWith('http')) {
-        link = `${this.baseUrl}${link}`;
-      }
-
-      return {
-        name: title,
-        title: title,
-        description: description,
-        date: dateText,
-        time: timeText,
-        venue: venue,
-        location: venue,
-        city: 'Birmingham',
-        state: 'AL',
-        category: 'Film',
-        image: imageUrl,
-        imageUrl: imageUrl,
-        url: link,
-        link: link
-      };
-    } catch (error) {
-      console.error('Error parsing Sidewalk Film event:', error.message);
-      return null;
+    } finally {
+      await browser.close();
     }
   }
 }

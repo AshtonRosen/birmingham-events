@@ -1,9 +1,9 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
 /**
- * Saturn Birmingham Scraper
- * https://saturnbirmingham.com/events/
+ * Saturn Birmingham Scraper (Puppeteer version)
+ * Uses headless browser for SeeTickets widget
+ * https://saturnbirmingham.com/calendar
  */
 class SaturnBirminghamScraper {
   constructor() {
@@ -12,89 +12,107 @@ class SaturnBirminghamScraper {
   }
 
   async scrape() {
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
+
     try {
-      console.log('Scraping Saturn Birmingham events...');
+      console.log('Scraping Saturn Birmingham events with Puppeteer...');
+      const page = await browser.newPage();
 
-      const response = await axios.get(this.eventsUrl, {
-        timeout: 15000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      );
+
+      await page.goto(this.eventsUrl, {
+        waitUntil: 'networkidle2',
+        timeout: 30000
       });
 
-      const $ = cheerio.load(response.data);
-      const events = [];
+      // Wait for SeeTickets widget to load
+      try {
+        await page.waitForSelector('.seetickets-list-event-container, .event, article', { timeout: 10000 });
+      } catch (e) {
+        console.log('No events found on Saturn Birmingham');
+        return [];
+      }
 
-      // Saturn uses SeeTickets widget with .seetickets-list-event-container
-      const items = $('.seetickets-list-event-container');
+      const events = await page.evaluate((baseUrl) => {
+        const eventElements = document.querySelectorAll('.seetickets-list-event-container, .event, article');
+        const results = [];
 
-      items.each((i, elem) => {
-        const event = this.parseEvent($, $(elem));
-        if (event && event.name) {
-          events.push(event);
-        }
-      });
+        eventElements.forEach(el => {
+          try {
+            const titleEl = el.querySelector('h3 a, h2, h3, .title');
+            const title = titleEl ? titleEl.textContent.trim() : '';
+
+            if (!title) return;
+
+            const dateEl = el.querySelector('.event-date, .date, time');
+            const dateText = dateEl ? dateEl.textContent.trim() : '';
+
+            // Look for "Doors:" or "Show:" time info
+            let timeText = '';
+            const paragraphs = el.querySelectorAll('p');
+            paragraphs.forEach(p => {
+              const text = p.textContent.trim();
+              if (text.includes('Doors:') || text.includes('Show:')) {
+                timeText = text;
+              }
+            });
+
+            const descEl = el.querySelector('p.subtitle, .description, .synopsis');
+            const description = descEl ? descEl.textContent.trim().substring(0, 300) : '';
+
+            const imgEl = el.querySelector('img');
+            let imageUrl = imgEl ? imgEl.src : '';
+            if (imageUrl && !imageUrl.startsWith('http')) {
+              imageUrl = baseUrl + imageUrl;
+            }
+
+            const linkEl = el.querySelector('h3 a, .seetickets-buy-btn, a');
+            let link = linkEl ? linkEl.href : '';
+
+            results.push({
+              name: title,
+              title: title,
+              description: description,
+              date: dateText,
+              time: timeText,
+              venue: 'Saturn',
+              location: 'Saturn',
+              address: '200 41st St S',
+              city: 'Birmingham',
+              state: 'AL',
+              zipCode: '35222',
+              category: 'Music',
+              image: imageUrl,
+              imageUrl: imageUrl,
+              url: link || `${baseUrl}/calendar`,
+              link: link || `${baseUrl}/calendar`
+            });
+          } catch (error) {
+            console.error('Error parsing event:', error);
+          }
+        });
+
+        return results;
+      }, this.baseUrl);
 
       console.log(`Found ${events.length} Saturn Birmingham events`);
       return events;
+
     } catch (error) {
       console.error('Error scraping Saturn Birmingham:', error.message);
       return [];
-    }
-  }
-
-  parseEvent($, element) {
-    try {
-      // Saturn uses .seetickets-list-event-container with h3 links
-      const title = element.find('h3 a').first().text().trim();
-
-      // Date is in .event-date div ("Thu Feb 5" format)
-      const dateText = element.find('.event-date').first().text().trim();
-
-      // Time is in p tags - look for "Doors:" or "Show:" text
-      let timeText = '';
-      element.find('p').each((i, p) => {
-        const text = $(p).text().trim();
-        if (text.includes('Doors:') || text.includes('Show:')) {
-          timeText = text;
-          return false; // break
-        }
-      });
-
-      const venue = 'Saturn';
-
-      // Description is in p.subtitle
-      const description = element.find('p.subtitle').first().text().trim();
-
-      const image = element.find('img').first().attr('src') || '';
-      const imageUrl = image && !image.startsWith('http') ? `${this.baseUrl}${image}` : image;
-
-      // SeeTickets links are in h3 a or buy button
-      let link = element.find('h3 a').first().attr('href') ||
-                 element.find('.seetickets-buy-btn').first().attr('href') || '';
-      // SeeTickets URLs are typically absolute
-
-      return {
-        name: title,
-        title: title,
-        description: description,
-        date: dateText,
-        time: timeText,
-        venue: venue,
-        location: venue,
-        address: '200 41st St S',
-        city: 'Birmingham',
-        state: 'AL',
-        zipCode: '35222',
-        category: 'Music',
-        image: imageUrl,
-        imageUrl: imageUrl,
-        url: link,
-        link: link
-      };
-    } catch (error) {
-      console.error('Error parsing Saturn Birmingham event:', error.message);
-      return null;
+    } finally {
+      await browser.close();
     }
   }
 }
