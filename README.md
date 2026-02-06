@@ -1,21 +1,22 @@
 # Birmingham Events Aggregator
 
-🌐 **Live Site:** https://birmingham-events.onrender.com
-
-A comprehensive event scraper and aggregator for Birmingham, AL. Scrapes events from **17 local sources** including music venues, breweries, sports teams, and cultural institutions using Node.js and Cheerio, then presents them in a clean, organized web interface.
+A comprehensive event scraper and aggregator for Birmingham, AL. Scrapes events from **19 local sources** including music venues, breweries, sports teams, and cultural institutions using Node.js and Puppeteer headless browser, then presents them in a beautiful Moon River festival-inspired web interface.
 
 ## Features
 
-- **Multi-Source Scraping**: Aggregates events from 17 Birmingham event sources
-  - 🎵 Music venues (Alabama Theatre, Iron City, WorkPlay, Saturn)
-  - 🍺 Breweries (Monday Night, TrimTab, Cahaba, Avondale, Good People)
-  - ⚽ Sports (Birmingham Legion FC, BJCC events)
-  - 🎬 Arts & Culture (Sidewalk Film Festival)
-  - 🎟️ Major platforms (Ticketmaster, Eventbrite)
-- **Lightweight**: Uses Cheerio for HTML parsing (no headless browser needed)
+- **Headless Browser Scraping**: Uses Puppeteer for robust JavaScript rendering and dynamic content
+- **Multi-Source Scraping**: Aggregates events from 19 Birmingham event sources
+  - Music venues (Alabama Theatre, Iron City, WorkPlay, Saturn)
+  - Breweries (Monday Night, TrimTab, Cahaba, Avondale, Good People)
+  - Sports (Birmingham Legion FC, BJCC events)
+  - Arts & Culture (Sidewalk Film Festival)
+  - Major platforms (Ticketmaster, Eventbrite)
+- **Moon River Design**: Earthy, natural color palette inspired by Moon River Music Festival
+  - River Teal (#3B9C9C), Cream (#F5F2E8), Warm Brown (#8B6F47), Terracotta (#D4845C)
+  - Clean, minimalist typography
+  - Responsive, mobile-friendly layout
 - **Smart Deduplication**: Automatically removes duplicate events from multiple sources
 - **JSON API**: RESTful API for accessing event data programmatically
-- **Clean Web UI**: Beautiful, responsive interface for browsing events by date
 - **Daily Automation**: Automatically scrapes events daily at 6 AM
 - **Comprehensive Data**: Captures name, date, time, location, description, images, prices, and categories
 
@@ -138,6 +139,78 @@ The server will:
 - Serve both the API and web interface
 
 Visit http://localhost:3000 in your browser to see the events!
+
+## Using Puppeteer for Scraping
+
+Puppeteer provides powerful headless browser capabilities for scraping websites with dynamic JavaScript content.
+
+### Basic Puppeteer Scraper Pattern
+
+```javascript
+const puppeteer = require('puppeteer');
+
+class ExampleScraper {
+  async scrape() {
+    // Launch headless browser
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+
+    try {
+      const page = await browser.newPage();
+
+      // Navigate to page
+      await page.goto('https://example.com/events', {
+        waitUntil: 'networkidle2',
+        timeout: 30000
+      });
+
+      // Wait for dynamic content to load
+      await page.waitForSelector('.event-card');
+
+      // Extract data from DOM
+      const events = await page.evaluate(() => {
+        const eventElements = document.querySelectorAll('.event-card');
+        return Array.from(eventElements).map(el => ({
+          name: el.querySelector('.title')?.textContent?.trim(),
+          date: el.querySelector('.date')?.textContent?.trim(),
+          venue: el.querySelector('.venue')?.textContent?.trim(),
+          url: el.querySelector('a')?.href
+        }));
+      });
+
+      return events;
+    } finally {
+      await browser.close(); // Always close browser
+    }
+  }
+}
+
+module.exports = ExampleScraper;
+```
+
+### When to Use Puppeteer vs Cheerio
+
+**Use Puppeteer when:**
+- Site has dynamic JavaScript content
+- Content loads via AJAX/fetch
+- Need to interact with page (click buttons, fill forms)
+- Site uses modern frameworks (React, Vue, Angular)
+
+**Use Cheerio when:**
+- Site has static HTML
+- Content is server-rendered
+- Faster scraping needed
+- Lower memory usage required
+
+### Puppeteer Best Practices
+
+1. **Always close the browser** - Use try/finally blocks
+2. **Set timeouts** - Prevent hanging on slow sites
+3. **Wait for selectors** - Ensure content loads before scraping
+4. **Use headless mode** - Faster and more efficient
+5. **Handle errors gracefully** - Some sites may block or fail
 
 ## API Endpoints
 
@@ -304,42 +377,66 @@ Primary color is defined in multiple places:
 
 ## Deployment
 
-### Deploy to Heroku
+### Deploy to Vercel (Recommended)
 
-1. Create a Heroku app
-2. Add `Procfile`:
+Vercel provides the fastest hosting with automatic deployments and global edge network.
 
-```
-web: node api/server.js
-```
-
-3. Deploy:
+**Quick Deploy:**
 
 ```bash
-git init
-git add .
-git commit -m "Initial commit"
-heroku create your-app-name
-git push heroku main
+# Install Vercel CLI
+npm install -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy from project directory
+cd birmingham-events
+vercel
+
+# Deploy to production
+vercel --prod
 ```
 
-4. Run initial scrape:
+**GitHub Integration (Recommended):**
 
-```bash
-heroku run npm run scrape
+1. Push code to GitHub
+2. Go to [vercel.com](https://vercel.com) and import your repository
+3. Vercel auto-detects settings and deploys
+4. Every push to `main` triggers automatic production deployment
+
+**Configuration:**
+
+The project includes `vercel.json` for optimal deployment settings. Puppeteer is supported on Vercel with:
+
+```javascript
+// Vercel-compatible Puppeteer config
+const browser = await puppeteer.launch({
+  headless: 'new',
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu'
+  ]
+});
 ```
 
-### Deploy to Vercel/Netlify
+### Deploy to Railway (Alternative for Background Jobs)
 
-These platforms support static sites + serverless functions. You'll need to adapt the API endpoints to serverless function format.
+Railway is great if you need persistent background scraping:
+
+1. Go to [railway.app](https://railway.app)
+2. Connect GitHub repository
+3. Deploy automatically
+4. $5/month for persistent hosting
 
 ### Environment Variables
 
-For production, use environment variables:
+For production, set environment variables in your hosting platform:
 
 ```bash
 PORT=3000
-TICKETMASTER_API_KEY=your_key_here
 NODE_ENV=production
 ```
 

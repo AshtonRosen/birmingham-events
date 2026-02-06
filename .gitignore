@@ -31,3 +31,15 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Vercel
+.vercel
+.vercel.json
+
+# Puppeteer
+.local-chromium/
+puppeteer/.local-chromium/
+
+# Build files
+dist/
+build/

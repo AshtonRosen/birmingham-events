@@ -207,7 +207,7 @@ app.post('/api/scrape', async (req, res) => {
 app.get('/api/scrape', async (req, res) => {
   try {
     console.log('Manual scrape triggered via GET');
-    res.send('<h1>🔄 Scraping Birmingham Events...</h1><p>This will take 30-60 seconds. Check back in a minute!</p><p><a href="/">← Back to Events</a></p>');
+    res.send('<h1>Scraping Birmingham Events...</h1><p>This will take 30-60 seconds. Check back in a minute!</p><p><a href="/">← Back to Events</a></p>');
 
     // Run scrape in background
     cachedEvents = await scraper.scrapeAll();
@@ -242,8 +242,8 @@ app.get('/api/metadata', async (req, res) => {
 // ====================
 
 app.listen(PORT, async () => {
-  console.log(`\n🎉 Birmingham Events API running on http://localhost:${PORT}`);
-  console.log(`📊 API Documentation: http://localhost:${PORT}/api/events\n`);
+  console.log(`\nBirmingham Events API running on http://localhost:${PORT}`);
+  console.log(`API Documentation: http://localhost:${PORT}/api/events\n`);
 
   // Load cached events on startup
   await loadEvents();

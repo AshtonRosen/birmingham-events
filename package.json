@@ -26,6 +26,8 @@
     "date-fns": "^4.1.0",
     "express": "^5.2.1",
     "node-cron": "^4.2.1",
-    "node-ical": "^0.25.0"
+    "node-ical": "^0.25.0",
+    "puppeteer": "^24.37.2",
+    "puppeteer-core": "^24.37.2"
   }
 }
