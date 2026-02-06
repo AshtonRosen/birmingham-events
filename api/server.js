@@ -473,6 +473,70 @@ app.get('/api/test-blob', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/test-scrape
+ * Test scraping a single source and saving to Blob
+ */
+app.get('/api/test-scrape', async (req, res) => {
+  try {
+    console.log('Test scrape started - single source only');
+
+    // Import a single fast scraper
+    const CahabaBrewingScraper = require('../scraper/sources/cahaba-brewing');
+    const EventNormalizer = require('../scraper/utils/normalizer');
+
+    const cahaba = new CahabaBrewingScraper();
+
+    // Scrape just Cahaba
+    const rawEvents = await cahaba.scrape();
+    console.log(`Scraped ${rawEvents.length} raw events from Cahaba`);
+
+    // Normalize
+    const normalized = rawEvents.map(event => EventNormalizer.normalize(event, 'cahaba-brewing'));
+    console.log(`Normalized ${normalized.length} events`);
+
+    // Create output format
+    const groupedByDate = EventNormalizer.groupByDate(normalized);
+    const sortedByDate = EventNormalizer.sortDates(groupedByDate);
+
+    const output = {
+      metadata: {
+        lastUpdated: new Date().toISOString(),
+        totalEvents: normalized.length,
+        sources: ['cahaba-brewing'],
+        testMode: true
+      },
+      eventsByDate: sortedByDate,
+      allEvents: normalized
+    };
+
+    // Save to Blob
+    console.log('Saving to Blob storage...');
+    const blobUrl = await saveEventsToBlob(output);
+    console.log(`Saved to Blob: ${blobUrl}`);
+
+    // Update cache
+    cachedEvents = output;
+    lastFetchTime = Date.now();
+
+    res.json({
+      success: true,
+      message: 'Test scrape complete',
+      eventsScraped: rawEvents.length,
+      eventsNormalized: normalized.length,
+      blobUrl: blobUrl,
+      note: 'Visit homepage to see test events'
+    });
+
+  } catch (error) {
+    console.error('Test scrape failed:', error);
+    res.status(500).json({
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // ====================
 // STARTUP
 // ====================
