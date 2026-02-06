@@ -242,35 +242,49 @@ app.get('/api/events/search', async (req, res) => {
 
 /**
  * POST /api/scrape
- * Trigger manual scrape (restricted - requires auth in production)
+ * Trigger scrape via cron job (requires CRON_SECRET for authentication)
  */
 app.post('/api/scrape', async (req, res) => {
   try {
-    console.log('Manual scrape triggered');
+    // Authentication check
+    const authHeader = req.headers.authorization;
+    const cronSecret = process.env.CRON_SECRET;
+
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Valid CRON_SECRET required'
+      });
+    }
+
+    console.log('Cron scrape triggered');
 
     // Send immediate response
     res.json({
       message: 'Scraping started',
       status: 'in_progress',
-      note: 'This may take 30-60 seconds. Events will be available shortly.'
+      note: 'Running in background. Check logs for completion.'
     });
 
-    // Run scrape in background
-    const events = await scraper.scrapeAll();
+    // Run scrape (continues after response sent)
+    scraper.scrapeAll()
+      .then(async (events) => {
+        // Save to Vercel Blob
+        await saveEventsToBlob(events);
 
-    // Save locally
-    await scraper.saveEvents(events);
+        // Update cache
+        cachedEvents = events;
+        lastFetchTime = Date.now();
 
-    // Save to Vercel Blob
-    await saveEventsToBlob(events);
+        console.log(`Scrape complete: ${events.allEvents.length} events saved to Blob storage`);
+      })
+      .catch(error => {
+        console.error('Scrape failed:', error.message);
+      });
 
-    // Update cache
-    cachedEvents = events;
-    lastFetchTime = Date.now();
-
-    console.log('Manual scrape complete');
   } catch (error) {
     console.error('Manual scrape failed:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
